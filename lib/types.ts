@@ -126,4 +126,30 @@ export interface ProductVariant {
     url: string;
     altText: string;
   };
+}
+
+export interface CartCreateResponse {
+  cartCreate: {
+    cart: {
+      id: string;
+      checkoutUrl: string;
+    };
+    userErrors: Array<{
+      field: string[];
+      message: string;
+    }>;
+  };
+}
+
+export interface CartLinesAddResponse {
+  cartLinesAdd: {
+    cart: {
+      id: string;
+      checkoutUrl: string;
+    };
+    userErrors: Array<{
+      field: string[];
+      message: string;
+    }>;
+  };
 } 
