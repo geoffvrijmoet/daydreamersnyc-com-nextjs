@@ -133,4 +133,34 @@ export const COLLECTIONS_WITH_PRODUCTS_QUERY = `
       }
     }
   }
+`;
+
+export const CART_CREATE_MUTATION = `
+  mutation cartCreate {
+    cartCreate {
+      cart {
+        id
+        checkoutUrl
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const CART_ADD_LINES_MUTATION = `
+  mutation cartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
+    cartLinesAdd(cartId: $cartId, lines: $lines) {
+      cart {
+        id
+        checkoutUrl
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
 `; 
