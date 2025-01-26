@@ -1,11 +1,25 @@
-import { ClerkProvider } from '@clerk/nextjs'
-import { Inter } from 'next/font/google'
-import { UserButton } from "@clerk/nextjs";
-import { MainNav } from "@/components/main-nav";
-import { MobileNav } from "@/components/mobile-nav";
+import { Quicksand } from 'next/font/google'
+import localFont from 'next/font/local'
 import './globals.css'
+import { Header } from '@/components/header'
+import { Footer } from '@/components/footer'
+import type { Metadata } from 'next'
+import { CartProvider } from '@/lib/cart-context'
 
-const inter = Inter({ subsets: ['latin'] })
+const quicksand = Quicksand({ 
+  subsets: ['latin'],
+  variable: '--font-quicksand', 
+})
+
+const aloevera = localFont({
+  src: './fonts/Aloevera-OVoWO.ttf',
+  variable: '--font-aloevera',
+})
+
+export const metadata: Metadata = {
+  title: 'Daydreamers Pet Supply',
+  description: 'Premium pet supplies for your furry friends',
+}
 
 export default function RootLayout({
   children,
@@ -13,23 +27,18 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body className={inter.className}>
-          <div className="flex min-h-screen flex-col">
-            <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-              <div className="container flex h-14 items-center">
-                <MainNav />
-                <MobileNav className="md:hidden" />
-                <div className="flex flex-1 items-center justify-end space-x-4">
-                  <UserButton afterSignOutUrl="/" />
-                </div>
-              </div>
-            </header>
-            <main className="flex-1 container py-6">{children}</main>
+    <html lang="en">
+      <body className={`${quicksand.variable} ${aloevera.variable} font-quicksand`}>
+        <CartProvider>
+          <div className="min-h-screen flex flex-col">
+            <Header className="font-aloevera" />
+            <main className="flex-grow">
+              {children}
+            </main>
+            <Footer />
           </div>
-        </body>
-      </html>
-    </ClerkProvider>
+        </CartProvider>
+      </body>
+    </html>
   )
 }

@@ -1,41 +1,61 @@
 # Project Overview
-Use this guide to build a web app that ____.
+Use this guide to build a web app that will serve as the Shopify storefront for Daydreamers Pet Supply LLC (https://daydreamersnyc.com).
 
 # Feature Requirements
-- 
-- 
-- 
-- The website will be hosted at ___.com.
+- We will use headless Shopify to build the storefront.
+- We will utilize Shopify's built-in authentication via the Storefront API.
+- We will use Shopify's native database for product, customer, and order management.
+- We will use Shopify's admin api to manage the store.
+- The website will be hosted at https://daydreamersnyc.com.
 - The website will be deployed on Vercel.
-- The website code will be hosted on GitHub, at my personal account (geoffvrijmoet), on a repository called ____.
+- The website code will be hosted on GitHub, at my personal account (geoffvrijmoet), on a repository called daydreamersnyc-com-nextjs.
 - The web app should have lightning-fast performance.
 - The entire app should be extremely mobile-friendly.
-- We will use Next.js, Shadcn, Lucid, Clerk, MongoDB, and Tailwind CSS to build the app.
+- We will use Next.js, Shadcn, Lucid, and Tailwind CSS to build the app.
 
 # Relevant Docs
-This is the reference documentation for Clerk: https://clerk.com/docs/references/nextjs/
+- Shopify Storefront API: https://shopify.dev/docs/api/storefront
+- Shopify Customer Authentication: https://shopify.dev/docs/api/storefront/latest/mutations/customerAccessTokenCreate
 
 # Current File Structure
-📁 PROJECT-NAME
+📁 DAYDREAMERSNYC-COM-NEXTJS
 ├── 📁 app
 │   ├── 📁 api
 │   ├── 📁 fonts
+│   ├── 📁 menu/
+│   │   ├── 📁 [handle]/
+│   │   │   ├── 📄 page.tsx
 │   ├── 📁 sign-in/
-│   │   ├── 📁 [[...sign-in]]
-│   │   │   └── 📄 page.tsx  
+│   │   ├── 📄 page.tsx  
 │   ├── 📁 sign-up/
-│   │   ├── 📁 [[...sign-up]]
-│   │   │   └── 📄 page.tsx    
-│   │   ├── 📁 fonts
-│   │   ├── ⭐ favicon.ico
-│   │   ├── 📄 layout.tsx
-│   │   └── 📄 page.tsx
-│   ├── 📁 sign-up/
+│   │   ├── 📄 page.tsx    
 │   ├── 📁 fonts
 │   ├── ⭐ favicon.ico
 │   ├── 📄 globals.css
 │   ├── 📄 layout.tsx
 │   └── 📄 page.tsx
+├── 📁 components
+│   ├── 📁 ui
+│   │   ├── 📄 button.tsx
+│   │   ├── 📄 card.tsx
+│   │   ├── 📄 dialog.tsx
+│   │   ├── 📄 dropdown-menu.tsx
+│   │   ├── 📄 form.tsx
+│   │   ├── 📄 input.tsx
+│   │   ├── 📄 label.tsx
+│   │   ├── 📄 select.tsx
+│   │   ├── 📄 sheet.tsx
+│   │   ├── 📄 table.tsx
+│   │   └── 📄 toast.tsx
+│   ├── 📄 header.tsx
+│   ├── 📄 footer.tsx
+│   ├── 📄 product-card.tsx
+│   ├── 📄 product-grid.tsx
+│   ├── 📄 cart.tsx
+│   ├── 📄 cart-item.tsx
+│   ├── 📄 search.tsx
+│   └── 📄 loading.tsx
+
 ├── 📁 guidelines
 │   └── 📄 feature-doc-guideline.md
 ├── 📁 lib

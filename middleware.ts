@@ -1,17 +1,32 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-const isPublicRoute = createRouteMatcher(['/sign-in(.*)', '/sign-up(.*)'])
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-export default clerkMiddleware(async (auth, req) => {
-  if (!isPublicRoute(req)) {
-    await auth.protect();
+// This function can be marked `async` if using `await` inside
+export async function middleware(request: NextRequest): Promise<NextResponse> {
+  try {
+    // Add authentication logic here when we implement Shopify customer accounts
+    return NextResponse.next()
+  } catch (error) {
+    console.error('Middleware error:', error)
+    // Return to homepage on error
+    return NextResponse.redirect(new URL('/', request.url))
   }
-});
+}
 
+// See "Matching Paths" below to learn more
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
-    '/(api|trpc)(.*)',
+    /*
+     * Match paths that need authentication:
+     * - /account (customer account pages)
+     * - /api (API routes except auth)
+     * Skip:
+     * - api/auth (authentication endpoints)
+     * - _next/static (static files)
+     * - _next/image (image optimization)
+     * - favicon.ico
+     */
+    '/account/:path*',
+    '/api/((?!auth|webhooks).*)',
   ],
-};
+} as const
