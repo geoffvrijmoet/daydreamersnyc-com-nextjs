@@ -16,7 +16,7 @@ export function ResetCartButton() {
   return (
     <button
       onClick={handleReset}
-      className="px-4 py-2 text-sm font-quicksand text-red-500 hover:text-red-600"
+      className="bg-red-500 text-white px-6 py-3 rounded-full shadow-lg hover:bg-red-600 transition-colors font-quicksand font-bold"
     >
       Clear Cart
     </button>
