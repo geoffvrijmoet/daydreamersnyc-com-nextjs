@@ -8,6 +8,10 @@ export interface CartItem {
   price: number
   title: string
   isIceCream?: boolean  // Add this to identify ice cream items
+  bulkDiscount?: {
+    threshold: number
+    pricePerUnit: number
+  }
 }
 
 interface CartContextType {
@@ -88,6 +92,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     // Apply discount pricing for ice cream when total quantity is 2 or more
     if (item.isIceCream && totalIceCreamQuantity >= 2) {
       return sum + (1.50 * item.quantity)
+    }
+
+    // Apply bulk discount if available and threshold is met
+    if (item.bulkDiscount && item.quantity >= item.bulkDiscount.threshold) {
+      return sum + (item.bulkDiscount.pricePerUnit * item.quantity)
     }
 
     return sum + (item.price * item.quantity)

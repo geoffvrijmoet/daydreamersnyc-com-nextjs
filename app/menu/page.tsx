@@ -56,24 +56,34 @@ export default async function MenuPage() {
           return false
         })
         .flatMap(({ node: product }) => {
-          // If this is the ice cream product, create a card for each variant
+          // If this is the ice cream product, create hardcoded variants
           if (product.title === "Organic Doggy Ice Cream") {
-            return product.variants.edges.map(({ node: variant }) => ({
-              ...product,
-              id: variant.id,
-              title: variant.title,
-              priceRange: {
-                minVariantPrice: variant.price
-              },
-              images: {
-                edges: [{
-                  node: {
-                    url: variant.image?.url || product.images.edges[0]?.node.url,
-                    altText: variant.image?.altText || product.images.edges[0]?.node.altText
+            return [
+              {
+                ...product,
+                title: "Strawberry Shortcake",
+                id: product.id + "-shortcake",
+                description: "Kefir, Strawberries, Applesauce, Honey",
+                priceRange: {
+                  minVariantPrice: {
+                    amount: "3.00",
+                    currencyCode: "USD"
                   }
-                }]
+                }
+              },
+              {
+                ...product,
+                title: "Allergy Fighter",
+                id: product.id + "-allergy",
+                description: "Kefir, Pumpkin, Blueberries, Bee Pollen, Honey",
+                priceRange: {
+                  minVariantPrice: {
+                    amount: "3.00",
+                    currencyCode: "USD"
+                  }
+                }
               }
-            }))
+            ]
           }
           // Otherwise return the product as is
           return [product]

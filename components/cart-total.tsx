@@ -13,38 +13,38 @@ export function CartTotal() {
 
   return (
     <div className="fixed bottom-4 right-4 flex items-center gap-2">
-      <Link 
-        href="/cart"
-        className="bg-eggplant text-creamsicle px-6 py-3 rounded-full shadow-lg hover:bg-eggplant/90 transition-colors"
-      >
-        <div className="font-quicksand font-bold">
-          {itemCount} {itemCount === 1 ? 'item' : 'items'} •{' '}
-          {new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-          }).format(total)}
-        </div>
-      </Link>
       <div className="relative">
-        <button
-          onClick={resetCart}
-          onMouseEnter={() => setIsHovering(true)}
-          onMouseLeave={() => setIsHovering(false)}
-          className="bg-eggplant text-creamsicle w-10 h-10 rounded-full shadow-lg hover:bg-eggplant/90 transition-colors flex items-center justify-center font-bold text-xl"
-          aria-label="Clear cart"
+        <Link 
+          href="/cart"
+          className="bg-eggplant text-creamsicle px-6 py-3 rounded-full shadow-lg hover:bg-eggplant/90 transition-colors block"
         >
-          ×
-        </button>
+          <div className={`font-quicksand font-bold transition-opacity duration-300 ${isHovering ? 'opacity-0' : 'opacity-100'}`}>
+            {itemCount} {itemCount === 1 ? 'item' : 'items'} •{' '}
+            {new Intl.NumberFormat('en-US', {
+              style: 'currency',
+              currency: 'USD',
+            }).format(total)}
+          </div>
+        </Link>
         <div 
-          className={`absolute right-full mr-2 whitespace-nowrap bg-eggplant text-creamsicle px-4 py-2 rounded-full transform transition-all duration-300 font-quicksand font-bold ${
+          className={`absolute inset-0 font-quicksand font-bold flex items-center justify-center transition-all duration-300 text-woof ${
             isHovering 
-              ? 'opacity-100 translate-x-0' 
-              : 'opacity-0 translate-x-4 pointer-events-none'
+              ? 'opacity-100' 
+              : 'opacity-0 pointer-events-none'
           }`}
         >
           Clear Cart
         </div>
       </div>
+      <button
+        onClick={resetCart}
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+        className="bg-eggplant text-creamsicle w-10 h-10 rounded-full shadow-lg hover:bg-eggplant/90 transition-colors flex items-center justify-center font-bold text-xl"
+        aria-label="Clear cart"
+      >
+        ×
+      </button>
     </div>
   )
 } 

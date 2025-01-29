@@ -48,7 +48,7 @@ export const PRODUCT_QUERY = `
           }
         }
       }
-      variants(first: 10) {
+      variants(first: 250) {
         edges {
           node {
             id
@@ -102,7 +102,7 @@ export const COLLECTIONS_WITH_PRODUCTS_QUERY = `
                     currencyCode
                   }
                 }
-                variants(first: 10) {
+                variants(first: 250) {
                   edges {
                     node {
                       id
