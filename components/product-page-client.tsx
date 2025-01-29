@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CartProvider, useCart } from '@/lib/cart-context'
+import { useCart } from '@/lib/cart-context'
 import { ProductImagesGrid } from '@/components/product-images-grid'
 import { ProductVariants } from '@/components/product-variants'
 import { ProductDescriptionTabs } from '@/components/product-description-tabs'
@@ -84,61 +84,59 @@ export function ProductPageClient({ product }: ProductPageClientProps) {
     : parseFloat(selectedPrice)
 
   return (
-    <CartProvider>
-      <div className="container max-w-5xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-quicksand font-bold text-eggplant mb-8 text-center">{product.title}</h1>
-        
-        <div className="grid md:grid-cols-2 gap-8">
-          <div>
-            <ProductImagesGrid images={images} title={product.title} />
+    <div className="container max-w-5xl mx-auto px-4 py-8">
+      <h1 className="text-3xl font-quicksand font-bold text-eggplant mb-8 text-center">{product.title}</h1>
+      
+      <div className="grid md:grid-cols-2 gap-8">
+        <div>
+          <ProductImagesGrid images={images} title={product.title} />
+        </div>
+
+        <div>
+          <div className="flex items-center justify-center space-x-6 mb-6">
+            <button
+              onClick={() => handleQuantityChange(Math.max(0, quantity - 1))}
+              className="w-10 h-10 rounded-full bg-eggplant text-white flex items-center justify-center text-xl font-bold hover:bg-eggplant/90 transition-colors"
+            >
+              -
+            </button>
+            
+            <div className="text-center">
+              <p className="text-xl font-quicksand font-bold text-cutiepie">
+                {showBulkDiscount && (
+                  <span className="line-through text-cutiepie/50 block">
+                    {new Intl.NumberFormat('en-US', {
+                      style: 'currency',
+                      currency: selectedCurrency,
+                    }).format(parseFloat(selectedPrice))} each
+                  </span>
+                )}
+                {new Intl.NumberFormat('en-US', {
+                  style: 'currency',
+                  currency: selectedCurrency,
+                }).format(currentPrice)} each
+              </p>
+            </div>
+
+            <button
+              onClick={() => handleQuantityChange(quantity + 1)}
+              className="w-10 h-10 rounded-full bg-eggplant text-white flex items-center justify-center text-xl font-bold hover:bg-eggplant/90 transition-colors"
+            >
+              +
+            </button>
           </div>
 
-          <div>
-            <div className="flex items-center justify-center space-x-6 mb-6">
-              <button
-                onClick={() => handleQuantityChange(Math.max(0, quantity - 1))}
-                className="w-10 h-10 rounded-full bg-eggplant text-white flex items-center justify-center text-xl font-bold hover:bg-eggplant/90 transition-colors"
-              >
-                -
-              </button>
-              
-              <div className="text-center">
-                <p className="text-xl font-quicksand font-bold text-cutiepie">
-                  {showBulkDiscount && (
-                    <span className="line-through text-cutiepie/50 block">
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: selectedCurrency,
-                      }).format(parseFloat(selectedPrice))} each
-                    </span>
-                  )}
-                  {new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: selectedCurrency,
-                  }).format(currentPrice)} each
-                </p>
-              </div>
+          <ProductVariants 
+            product={product} 
+            onVariantChange={handleVariantChange} 
+          />
 
-              <button
-                onClick={() => handleQuantityChange(quantity + 1)}
-                className="w-10 h-10 rounded-full bg-eggplant text-white flex items-center justify-center text-xl font-bold hover:bg-eggplant/90 transition-colors"
-              >
-                +
-              </button>
-            </div>
-
-            <ProductVariants 
-              product={product} 
-              onVariantChange={handleVariantChange} 
-            />
-
-            <div className="bg-white rounded-lg p-6 mt-6">
-              <ProductDescriptionTabs description={product.description} />
-            </div>
+          <div className="bg-white rounded-lg p-6 mt-6">
+            <ProductDescriptionTabs description={product.description} />
           </div>
         </div>
-        <CartTotal />
       </div>
-    </CartProvider>
+      <CartTotal />
+    </div>
   )
 } 
