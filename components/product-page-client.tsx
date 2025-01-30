@@ -16,47 +16,17 @@ export function ProductPageClient({ product }: ProductPageClientProps) {
   const { items, addItem, removeItem } = useCart()
   const images = product.images.edges.map(edge => edge.node)
   const firstVariant = product.variants.edges[0]?.node
-  
-  const [selectedPrice, setSelectedPrice] = useState(firstVariant?.price.amount || product.priceRange.minVariantPrice.amount)
-  const [selectedCurrency, setSelectedCurrency] = useState(firstVariant?.price.currencyCode || product.priceRange.minVariantPrice.currencyCode)
-  const [quantity, setQuantity] = useState(1)
-
-  // Sync with cart quantity on mount and when cart changes
-  useEffect(() => {
-    const cartItem = items.find(item => item.productId === product.id)
-    if (cartItem) {
-      setQuantity(cartItem.quantity)
-    } else {
-      setQuantity(0)
-    }
-  }, [items, product.id])
-
-  const handleVariantChange = (variantId: string, price: string, currency: string) => {
-    setSelectedPrice(price)
-    setSelectedCurrency(currency)
-  }
-
-  const handleQuantityChange = (newQuantity: number) => {
-    setQuantity(newQuantity)
-    
-    if (newQuantity === 0) {
-      removeItem(product.id)
-    } else {
-      addItem({
-        productId: product.id,
-        quantity: newQuantity,
-        price: parseFloat(selectedPrice),
-        title: product.title,
-        isIceCream: false,
-        bulkDiscount: bulkDiscount
-      })
-    }
-  }
-
-  // Calculate total price
   const variants = product.variants.edges.map(edge => edge.node)
   const isIceCream = product.title === "Strawberry Shortcake" || product.title === "Allergy Fighter"
   
+  // Initialize selectedVariant
+  const [selectedVariant, setSelectedVariant] = useState<typeof firstVariant | null>(firstVariant || null)
+  const [selectedPrice, setSelectedPrice] = useState(firstVariant?.price.amount || product.priceRange.minVariantPrice.amount)
+  const [selectedCurrency, setSelectedCurrency] = useState(firstVariant?.price.currencyCode || product.priceRange.minVariantPrice.currencyCode)
+  
+  // Initialize quantity state without reading from cart yet
+  const [quantity, setQuantity] = useState(0)
+
   // Calculate bulk discount if applicable
   const bulkDiscount = (() => {
     if (isIceCream || variants.length !== 2) return undefined
@@ -78,6 +48,64 @@ export function ProductPageClient({ product }: ProductPageClientProps) {
     }
   })()
 
+  // Keep quantity in sync with cart
+  useEffect(() => {
+    const productId = isIceCream ? product.id : selectedVariant?.id
+    if (!productId) return
+
+    const title = isIceCream 
+      ? product.title 
+      : `${product.title} - ${selectedVariant?.title || ''}`
+
+    const cartItem = items.find(item => {
+      if (isIceCream) {
+        return item.productId === product.id && item.isIceCream
+      } else {
+        return item.productId === productId && item.title === title
+      }
+    })
+    
+    setQuantity(cartItem?.quantity || 0)
+  }, [items, isIceCream, product.id, product.title, selectedVariant])
+
+  const handleVariantChange = (variantId: string, price: string, currency: string) => {
+    const variant = variants.find(v => v.id === variantId)
+    if (!variant) return
+    
+    setSelectedVariant(variant)
+    setSelectedPrice(price)
+    setSelectedCurrency(currency)
+    
+    // Check cart quantity for the new variant
+    const title = `${product.title} - ${variant.title || ''}`
+    const cartItem = items.find(item => 
+      item.productId === variant.id && item.title === title
+    )
+    setQuantity(cartItem?.quantity || 0)
+  }
+
+  const handleQuantityChange = (newQuantity: number) => {
+    const productId = isIceCream ? product.id : selectedVariant?.id
+    if (!productId) return
+    
+    const title = isIceCream 
+      ? product.title 
+      : `${product.title} - ${selectedVariant?.title || ''}`
+    
+    if (newQuantity === 0) {
+      removeItem(productId, title)
+    } else {
+      addItem({
+        productId,
+        quantity: newQuantity,
+        price: parseFloat(selectedPrice),
+        title,
+        isIceCream,
+        bulkDiscount: isIceCream ? undefined : bulkDiscount
+      })
+    }
+  }
+
   const showBulkDiscount = bulkDiscount && quantity >= bulkDiscount.threshold
   const currentPrice = showBulkDiscount
     ? bulkDiscount.pricePerUnit
@@ -94,15 +122,8 @@ export function ProductPageClient({ product }: ProductPageClientProps) {
 
         <div>
           <div className="flex items-center justify-center space-x-6 mb-6">
-            <button
-              onClick={() => handleQuantityChange(Math.max(0, quantity - 1))}
-              className="w-10 h-10 rounded-full bg-eggplant text-white flex items-center justify-center text-xl font-bold hover:bg-eggplant/90 transition-colors"
-            >
-              -
-            </button>
-            
             <div className="text-center">
-              <p className="text-xl font-quicksand font-bold text-cutiepie">
+              <p className="text-xl font-quicksand font-bold text-cutiepie mb-4">
                 {showBulkDiscount && (
                   <span className="line-through text-cutiepie/50 block">
                     {new Intl.NumberFormat('en-US', {
@@ -116,14 +137,23 @@ export function ProductPageClient({ product }: ProductPageClientProps) {
                   currency: selectedCurrency,
                 }).format(currentPrice)} each
               </p>
+              
+              <div className="flex items-center justify-center space-x-2">
+                <button
+                  onClick={() => handleQuantityChange(Math.max(0, quantity - 1))}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-creamsicle/20 text-eggplant hover:bg-creamsicle/30"
+                >
+                  -
+                </button>
+                <span className="w-8 text-center font-quicksand">{quantity}</span>
+                <button
+                  onClick={() => handleQuantityChange(quantity + 1)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-creamsicle/20 text-eggplant hover:bg-creamsicle/30"
+                >
+                  +
+                </button>
+              </div>
             </div>
-
-            <button
-              onClick={() => handleQuantityChange(quantity + 1)}
-              className="w-10 h-10 rounded-full bg-eggplant text-white flex items-center justify-center text-xl font-bold hover:bg-eggplant/90 transition-colors"
-            >
-              +
-            </button>
           </div>
 
           <ProductVariants 

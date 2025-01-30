@@ -146,13 +146,32 @@ export function ProductCard({ product }: ProductCardProps) {
   // Sync with cart quantity on mount and when cart changes
   useEffect(() => {
     const productId = isIceCream ? product.id : selectedVariant?.id
-    const cartItem = items.find(item => item.productId === productId)
+    const cartItem = items.find(item => {
+      if (isIceCream) {
+        return item.productId === product.id
+      } else if (isVivaRaw) {
+        return item.productId === productId && 
+               item.title === `${product.title} - ${selectedAnimalType} / ${selectedProteinType}`
+      } else {
+        return item.productId === productId
+      }
+    })
+    
     if (cartItem) {
       setQuantity(cartItem.quantity)
     } else {
       setQuantity(0)
     }
-  }, [items, isIceCream, product.id, selectedVariant?.id])
+  }, [
+    items, 
+    isIceCream, 
+    isVivaRaw,
+    product.id, 
+    product.title,
+    selectedVariant?.id,
+    selectedAnimalType,
+    selectedProteinType
+  ])
 
   // Calculate if ice cream discount applies
   const totalIceCreamQuantity = items
@@ -164,13 +183,13 @@ export function ProductCard({ product }: ProductCardProps) {
   const showBulkDiscount = bulkDiscount && quantity >= bulkDiscount.threshold
 
   const handleQuantityChange = (newQuantity: number) => {
-    setQuantity(newQuantity)
+    const productId = isIceCream ? product.id : selectedVariant?.id
     
     if (newQuantity === 0) {
-      removeItem(isIceCream ? product.id : selectedVariant.id)
+      removeItem(productId)
     } else {
       addItem({
-        productId: isIceCream ? product.id : selectedVariant.id,
+        productId,
         quantity: newQuantity,
         price: parseFloat(price),
         title: isIceCream 
@@ -182,6 +201,8 @@ export function ProductCard({ product }: ProductCardProps) {
         bulkDiscount: isIceCream ? undefined : bulkDiscount
       })
     }
+    
+    setQuantity(newQuantity)
   }
 
   return (

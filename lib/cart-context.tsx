@@ -17,7 +17,7 @@ export interface CartItem {
 interface CartContextType {
   items: CartItem[]
   addItem: (item: CartItem) => void
-  removeItem: (productId: string) => void
+  removeItem: (productId: string, title?: string) => void
   resetCart: () => void
   total: number
 }
@@ -45,8 +45,19 @@ function loadFromStorage(): CartItem[] {
   }
 }
 
+function findCartItem(items: CartItem[], productId: string, title?: string): CartItem | undefined {
+  return items.find(item => {
+    if (title) {
+      // For variants, match both ID and title
+      return item.productId === productId && item.title === title
+    }
+    // For ice cream products, match only by ID
+    return item.productId === productId && item.isIceCream
+  })
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>(loadFromStorage)
+  const [items, setItems] = useState<CartItem[]>(() => loadFromStorage())
 
   useEffect(() => {
     saveToStorage(items)
@@ -54,28 +65,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addItem = (newItem: CartItem) => {
     setItems(currentItems => {
-      const existingItem = currentItems.find(item => item.productId === newItem.productId)
-      const updatedItems = existingItem
+      const existingItem = findCartItem(currentItems, newItem.productId, newItem.title)
+      return existingItem
         ? currentItems.map(item =>
-            item.productId === newItem.productId
+            (item.productId === newItem.productId && item.title === newItem.title)
               ? { ...item, quantity: newItem.quantity }
               : item
           )
         : [...currentItems, newItem]
-      
-      // Save to localStorage immediately
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(updatedItems))
-      return updatedItems
     })
   }
 
-  const removeItem = (productId: string) => {
-    setItems(currentItems => {
-      const updatedItems = currentItems.filter(item => item.productId !== productId)
-      // Save to localStorage immediately
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(updatedItems))
-      return updatedItems
-    })
+  const removeItem = (productId: string, title?: string) => {
+    setItems(currentItems => 
+      currentItems.filter(item => {
+        if (title) {
+          return !(item.productId === productId && item.title === title)
+        }
+        return !(item.productId === productId && item.isIceCream)
+      })
+    )
   }
 
   const resetCart = () => {
