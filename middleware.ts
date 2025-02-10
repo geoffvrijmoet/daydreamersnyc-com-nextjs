@@ -2,8 +2,19 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 // This function can be marked `async` if using `await` inside
-export async function middleware(_request: NextRequest): Promise<NextResponse> {
-  // For all routes, continue normally
+export async function middleware(request: NextRequest): Promise<NextResponse> {
+  const { pathname, searchParams } = request.nextUrl
+
+  // Handle cart URLs
+  if (pathname.startsWith('/cart/')) {
+    const shopifyUrl = new URL(
+      pathname + (searchParams.toString() ? `?${searchParams.toString()}` : ''),
+      'https://daydreamers-pet-supply.myshopify.com'
+    )
+    return NextResponse.redirect(shopifyUrl)
+  }
+
+  // For all other routes, continue normally
   return NextResponse.next()
 }
 
@@ -11,15 +22,12 @@ export async function middleware(_request: NextRequest): Promise<NextResponse> {
 export const config = {
   matcher: [
     /*
-     * Match paths that need authentication:
+     * Match all paths that need special handling:
+     * - /cart (cart and checkout URLs)
      * - /account (customer account pages)
      * - /api (API routes except auth)
-     * Skip:
-     * - api/auth (authentication endpoints)
-     * - _next/static (static files)
-     * - _next/image (image optimization)
-     * - favicon.ico
      */
+    '/cart/:path*',
     '/account/:path*',
     '/api/((?!auth|webhooks).*)',
   ],
