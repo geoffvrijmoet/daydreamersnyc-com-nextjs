@@ -5,7 +5,7 @@ import Image from 'next/image'
 
 interface ProductImage {
   url: string
-  altText: string
+  altText: string | null
 }
 
 interface ProductImagesGridProps {
