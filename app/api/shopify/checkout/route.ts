@@ -34,9 +34,23 @@ export async function POST(request: Request) {
     // Set cart ID in cookies
     cookies().set('cartId', response.cartCreate.cart.id)
 
+    // Ensure checkout URL uses the Shopify domain
+    const checkoutUrl = response.cartCreate.cart.checkoutUrl.replace(
+      'daydreamers-pet-supply.myshopify.com',
+      'checkout.shopify.com'
+    )
+
+    // Validate the URL before redirecting
+    try {
+      new URL(checkoutUrl)
+    } catch {
+      console.error('Invalid checkout URL:', checkoutUrl)
+      throw new Error('Invalid checkout URL returned from Shopify')
+    }
+
     return NextResponse.json({
       cart: response.cartCreate.cart,
-      checkoutUrl: response.cartCreate.cart.checkoutUrl
+      checkoutUrl
     }, { status: 201 })
   } catch (error) {
     console.error('Error creating cart:', error)
