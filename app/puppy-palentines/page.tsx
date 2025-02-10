@@ -648,7 +648,8 @@ export default function PuppyPalentines() {
         
         // Redirect to checkout
         if (cartData.checkoutUrl) {
-          window.location.href = cartData.checkoutUrl
+          // Use window.location.assign for a cleaner redirect
+          window.location.assign(cartData.checkoutUrl)
         } else {
           throw new Error('No checkout URL returned')
         }
@@ -694,7 +695,8 @@ export default function PuppyPalentines() {
         
         // Redirect to invoice URL
         if (data.invoiceUrl) {
-          window.location.href = data.invoiceUrl
+          // Use window.location.assign for a cleaner redirect
+          window.location.assign(data.invoiceUrl)
         } else {
           throw new Error('No invoice URL returned')
         }

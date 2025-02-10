@@ -111,7 +111,6 @@ export async function POST(request: Request) {
         ]
       },
       ...bonusItems.map((item) => {
-        // Extract numeric ID from the GraphQL ID
         const numericId = item.variantId.split('/').pop() || ''
         return {
           variant_id: numericId,
@@ -119,20 +118,6 @@ export async function POST(request: Request) {
         }
       })
     ]
-
-    console.log('Draft order payload:', {
-      line_items: lineItems,
-      note: `Puppy Palentines Order for ${dogName}`,
-      shipping_address: deliveryInfo.includes('Need to find:') 
-        ? null 
-        : {
-            address1: deliveryInfo.split(',')[0].trim(),
-            city: deliveryInfo.split(',')[1].trim(),
-            province: deliveryInfo.split(',')[2].trim().split(' ')[1],
-            zip: deliveryInfo.split(',')[2].trim().split(' ')[2],
-            country: 'US'
-          }
-    })
 
     // Create draft order
     const response = await fetch(
@@ -173,16 +158,39 @@ export async function POST(request: Request) {
     if (!data?.draft_order?.id) {
       throw new Error('No draft order ID returned')
     }
-    
-    // Send invoice with retry mechanism
-    const invoice = await sendInvoiceWithRetry(data.draft_order.id, dogName)
-    
-    if (!invoice?.invoice_url) {
-      throw new Error('No invoice URL returned')
+
+    // Get the invoice URL from the draft order response
+    const invoiceUrl = data.draft_order.invoice_url
+    if (!invoiceUrl) {
+      throw new Error('No invoice URL in draft order response')
+    }
+
+    // Send the invoice email
+    const invoiceResponse = await fetch(
+      `https://${STORE_DOMAIN}/admin/api/2024-01/draft_orders/${data.draft_order.id}/send_invoice.json`,
+      {
+        method: 'POST',
+        headers: new Headers({
+          'X-Shopify-Access-Token': ADMIN_ACCESS_TOKEN,
+          'Content-Type': 'application/json',
+        }),
+        body: JSON.stringify({
+          draft_order_invoice: {
+            to: "orders@daydreamersnyc.com",
+            subject: `Puppy Palentines Order for ${dogName}`,
+            custom_message: `New Puppy Palentines order received for ${dogName}!`
+          }
+        })
+      }
+    )
+
+    if (!invoiceResponse.ok) {
+      console.error('Warning: Failed to send invoice email:', await invoiceResponse.json())
+      // Don't throw error here, we still want to return the invoice URL
     }
     
     return NextResponse.json({ 
-      invoiceUrl: invoice.invoice_url 
+      invoiceUrl 
     })
   } catch (error) {
     console.error('Error creating order:', error)

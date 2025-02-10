@@ -47,6 +47,8 @@ export async function POST(request: Request) {
     const body = await request.json() as CartRequestBody
     const { items } = body
 
+    console.log('Creating cart with items:', items)
+
     // Create cart with all items
     const response = await shopifyClient.request<CartCreateResponse>(CART_CREATE_MUTATION, {
       input: {
@@ -58,12 +60,20 @@ export async function POST(request: Request) {
       }
     })
 
+    console.log('Cart creation response:', response)
+
     if (response.cartCreate.userErrors.length > 0) {
+      console.error('Cart creation errors:', response.cartCreate.userErrors)
       throw new Error(JSON.stringify(response.cartCreate.userErrors))
     }
 
+    // Get the checkout URL and ensure it uses the store's myshopify.com domain
+    const cartUrl = response.cartCreate.cart.checkoutUrl
+    const checkoutUrl = cartUrl.replace('daydreamersnyc.com', 'daydreamers-pet-supply.myshopify.com')
+    console.log('Checkout URL:', checkoutUrl)
+
     return NextResponse.json({
-      checkoutUrl: response.cartCreate.cart.checkoutUrl
+      checkoutUrl
     })
   } catch (error) {
     console.error('Error creating cart:', error)
