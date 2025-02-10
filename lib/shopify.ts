@@ -37,6 +37,7 @@ export interface CartResponse {
               }
             }
             merchandise: {
+              __typename: string
               id: string
               title: string
               product: {
@@ -114,14 +115,16 @@ export const createCart = `
                 }
               }
               merchandise {
-                id
-                title
-                product {
+                ... on ProductVariant {
+                  id
                   title
-                  handle
-                  featuredImage {
-                    url
-                    altText
+                  product {
+                    title
+                    handle
+                    featuredImage {
+                      url
+                      altText
+                    }
                   }
                 }
               }
