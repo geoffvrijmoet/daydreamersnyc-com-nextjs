@@ -648,8 +648,9 @@ export default function PuppyPalentines() {
         
         // Redirect to checkout
         if (cartData.checkoutUrl) {
-          // Use window.location.assign for a cleaner redirect
-          window.location.assign(cartData.checkoutUrl)
+          console.log('Redirecting to checkout URL:', cartData.checkoutUrl)
+          // Use window.location.replace for a hard redirect to the Shopify checkout URL
+          window.location.replace(cartData.checkoutUrl)
         } else {
           throw new Error('No checkout URL returned')
         }
@@ -695,8 +696,8 @@ export default function PuppyPalentines() {
         
         // Redirect to invoice URL
         if (data.invoiceUrl) {
-          // Use window.location.assign for a cleaner redirect
-          window.location.assign(data.invoiceUrl)
+          // Use window.location.replace for a hard redirect
+          window.location.replace(data.invoiceUrl)
         } else {
           throw new Error('No invoice URL returned')
         }
