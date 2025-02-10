@@ -38,11 +38,11 @@ export async function POST(request: Request) {
     // Set cart ID in cookies
     cookies().set('cartId', response.cartCreate.cart.id)
 
-    // Parse the original URL to get the path and query
-    const originalUrl = new URL(response.cartCreate.cart.checkoutUrl)
-    
-    // Construct new URL with checkout.shopify.com domain
-    const checkoutUrl = `https://checkout.shopify.com${originalUrl.pathname}${originalUrl.search}`
+    // Use the original checkout URL but replace the domain using regex
+    const checkoutUrl = response.cartCreate.cart.checkoutUrl.replace(
+      /^https?:\/\/[^\/]+/,
+      'https://checkout.shopify.com'
+    )
     
     console.log('Modified checkout URL:', checkoutUrl)
 
