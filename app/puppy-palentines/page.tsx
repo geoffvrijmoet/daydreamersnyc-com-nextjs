@@ -3,6 +3,14 @@
 import { useEffect, useState, useRef } from 'react'
 import Script from 'next/script'
 import Image from 'next/image'
+import { shopifyClient } from '@/lib/shopify'
+import { 
+  PRODUCTS_QUERY, 
+  CART_CREATE_MUTATION, 
+  CART_ADD_LINES_MUTATION,
+  CartCreateResponse,
+  CartAddLinesResponse
+} from '@/lib/queries'
 
 interface YouTubePlayer {
   destroy: () => void
@@ -48,20 +56,69 @@ declare global {
   }
 }
 
+interface ShopifyProduct {
+  id: string
+  title: string
+  handle: string
+  vendor: string
+  priceRange: {
+    minVariantPrice: {
+      amount: string
+      currencyCode: string
+    }
+  }
+  images: {
+    edges: Array<{
+      node: {
+        url: string
+        altText: string | null
+      }
+    }>
+  }
+}
+
 interface OrderFormData {
   dogName: string
-  ownerNames: string
-  address: string
+  knowsAddress: boolean
+  // Address fields
+  addressLine1: string
+  addressLine2: string
+  city: string
+  state: string
+  zipCode: string
+  // Alternative info if address unknown
+  ownerInfo: string
+  // Order details
+  bagPrice: number
+  bonusItems: { [id: string]: { quantity: number, price: number } }
   note: string
+}
+
+interface GraphQLProductsResponse {
+  products: {
+    edges: Array<{
+      node: ShopifyProduct
+    }>
+  }
 }
 
 export default function PuppyPalentines() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [showOrderModal, setShowOrderModal] = useState(false)
+  const [currentStep, setCurrentStep] = useState(1)
+  const [bonusProducts, setBonusProducts] = useState<ShopifyProduct[]>([])
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false)
   const [formData, setFormData] = useState<OrderFormData>({
     dogName: '',
-    ownerNames: '',
-    address: '',
+    knowsAddress: true,
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    ownerInfo: '',
+    bagPrice: 20,
+    bonusItems: {},
     note: ''
   })
   const playerRef = useRef<YouTubePlayer | null>(null)
@@ -84,6 +141,13 @@ export default function PuppyPalentines() {
       }
     }
   }, [])
+
+  useEffect(() => {
+    // Fetch bonus products when the modal is opened and we're on step 3
+    if (showOrderModal && currentStep === 3) {
+      fetchBonusProducts()
+    }
+  }, [showOrderModal, currentStep])
 
   const initializePlayer = () => {
     playerRef.current = new window.YT.Player('youtube-player', {
@@ -127,11 +191,455 @@ export default function PuppyPalentines() {
     }
   }
 
-  const handleOrderSubmit = (e: React.FormEvent) => {
+  const handleNextStep = () => {
+    setCurrentStep(currentStep + 1)
+  }
+
+  const handlePrevStep = () => {
+    setCurrentStep(currentStep - 1)
+  }
+
+  const fetchBonusProducts = async () => {
+    try {
+      setIsLoadingProducts(true)
+      const data = await shopifyClient.request<GraphQLProductsResponse>(PRODUCTS_QUERY)
+      const products = data.products.edges
+        .map(edge => edge.node)
+        .filter(product => {
+          // Extract numeric ID from GraphQL ID (format: gid://shopify/Product/NUMERIC_ID)
+          const numericId = product.id.split('/').pop() || ''
+          
+          // Include the specific Dr. Harvey's product
+          if (numericId === '8575818006811') return true
+          
+          // Exclude specific product IDs
+          const excludedProductIds = [
+            '9812557234459', '8809947595035', '8809906143515', '8766863671579',
+            '8766792532251', '8748938002715', '8587445010715', '8580220682523',
+            '8470590095643', '8328765505819', '8474075300123'
+          ]
+          if (excludedProductIds.includes(numericId)) return false
+          
+          // Exclude products from specific vendors
+          const excludedVendors = [
+            "Dr. Harvey's",
+            "Sodapup",
+            "Evermore Pet Food",
+            "Ware of the Dog",
+            "Crude Carnivore"
+          ]
+          return !excludedVendors.includes(product.vendor)
+        })
+      setBonusProducts(products)
+    } catch (error) {
+      console.error('Error fetching bonus products:', error)
+    } finally {
+      setIsLoadingProducts(false)
+    }
+  }
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div className="space-y-4">
+            <h4 className="text-lg font-medium text-gray-900 mb-2">Who&apos;s the Lucky Pup?</h4>
+            <div>
+              <label htmlFor="dogName" className="block text-sm font-medium text-gray-700 mb-1">
+                Dog&apos;s Name
+              </label>
+              <input
+                type="text"
+                id="dogName"
+                value={formData.dogName}
+                onChange={(e) => setFormData({ ...formData, dogName: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                required
+              />
+            </div>
+            <div className="flex justify-end pt-4">
+              <button
+                onClick={handleNextStep}
+                disabled={!formData.dogName}
+                className="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next →
+              </button>
+            </div>
+          </div>
+        )
+
+      case 2:
+        return (
+          <div className="space-y-4">
+            <h4 className="text-lg font-medium text-gray-900 mb-2">Delivery Details</h4>
+            <div className="space-y-4">
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setFormData({ ...formData, knowsAddress: true })}
+                  className={`flex-1 p-4 rounded-lg border-2 ${
+                    formData.knowsAddress 
+                      ? 'border-pink-500 bg-pink-50' 
+                      : 'border-gray-200 hover:border-pink-200'
+                  }`}
+                >
+                  I know their address
+                </button>
+                <button
+                  onClick={() => setFormData({ ...formData, knowsAddress: false })}
+                  className={`flex-1 p-4 rounded-lg border-2 ${
+                    !formData.knowsAddress 
+                      ? 'border-pink-500 bg-pink-50' 
+                      : 'border-gray-200 hover:border-pink-200'
+                  }`}
+                >
+                  I need help finding them
+                </button>
+              </div>
+
+              {formData.knowsAddress ? (
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="addressLine1" className="block text-sm font-medium text-gray-700 mb-1">
+                      Address
+                    </label>
+                    <input
+                      type="text"
+                      id="addressLine1"
+                      value={formData.addressLine1}
+                      onChange={(e) => setFormData({ ...formData, addressLine1: e.target.value })}
+                      placeholder="Street address"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      required={formData.knowsAddress}
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="text"
+                      id="addressLine2"
+                      value={formData.addressLine2}
+                      onChange={(e) => setFormData({ ...formData, addressLine2: e.target.value })}
+                      placeholder="Apartment, suite, etc. (optional)"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="col-span-1">
+                      <input
+                        type="text"
+                        id="city"
+                        value={formData.city}
+                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                        placeholder="City"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        required={formData.knowsAddress}
+                      />
+                    </div>
+                    <div className="col-span-1">
+                      <select
+                        id="state"
+                        value={formData.state}
+                        onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        required={formData.knowsAddress}
+                      >
+                        <option value="">State</option>
+                        <option value="NY">NY</option>
+                      </select>
+                    </div>
+                    <div className="col-span-1">
+                      <input
+                        type="text"
+                        id="zipCode"
+                        value={formData.zipCode}
+                        onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
+                        placeholder="ZIP"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        required={formData.knowsAddress}
+                        pattern="[0-9]{5}"
+                        maxLength={5}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor="ownerInfo" className="block text-sm font-medium text-gray-700 mb-1">
+                    Tell us what you know
+                  </label>
+                  <textarea
+                    id="ownerInfo"
+                    value={formData.ownerInfo}
+                    onChange={(e) => setFormData({ ...formData, ownerInfo: e.target.value })}
+                    placeholder="Owner's name, phone number, Instagram handle, where you usually see them, or any other helpful details..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    rows={4}
+                    required={!formData.knowsAddress}
+                  />
+                  <p className="mt-2 text-sm text-gray-600">
+                    Don&apos;t worry! We&apos;ll use our network in the dog community to track them down. 
+                    We&apos;ll contact you if we need more information.
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-between pt-4">
+              <button
+                onClick={handlePrevStep}
+                className="px-4 py-2 text-gray-600 hover:text-gray-900"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={handleNextStep}
+                disabled={formData.knowsAddress ? !formData.addressLine1 || !formData.city || !formData.zipCode : !formData.ownerInfo}
+                className="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next →
+              </button>
+            </div>
+          </div>
+        )
+
+      case 3:
+        return (
+          <div className="space-y-4">
+            <h4 className="text-lg font-medium text-gray-900 mb-2">Customize Your Gift</h4>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Choose Your Bag Size
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  {[20, 25, 30].map((price) => (
+                    <button
+                      key={price}
+                      onClick={() => setFormData({ ...formData, bagPrice: price })}
+                      className={`p-4 rounded-lg border-2 ${
+                        formData.bagPrice === price 
+                          ? 'border-pink-500 bg-pink-50' 
+                          : 'border-gray-200 hover:border-pink-200'
+                      }`}
+                    >
+                      ${price}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-2">
+                  <label htmlFor="customPrice" className="block text-sm text-gray-600 mb-1">
+                    Or enter custom amount:
+                  </label>
+                  <input
+                    type="number"
+                    id="customPrice"
+                    min="20"
+                    step="5"
+                    value={formData.bagPrice}
+                    onChange={(e) => setFormData({ ...formData, bagPrice: parseInt(e.target.value) })}
+                    className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Add Bonus Items
+                </label>
+                {isLoadingProducts ? (
+                  <div className="text-center py-4">
+                    <p className="text-gray-600">Loading bonus items...</p>
+                  </div>
+                ) : bonusProducts.length > 0 ? (
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                    {bonusProducts.map((product) => {
+                      const productPrice = parseFloat(product.priceRange.minVariantPrice.amount)
+                      const isSelected = product.id in formData.bonusItems
+                      const quantity = isSelected ? formData.bonusItems[product.id].quantity : 0
+                      
+                      return (
+                        <label
+                          key={product.id}
+                          className={`flex items-center p-2 rounded-lg border-2 cursor-pointer ${
+                            isSelected
+                              ? 'border-pink-500 bg-pink-50'
+                              : 'border-gray-200 hover:border-pink-200'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              const newBonusItems = { ...formData.bonusItems }
+                              if (e.target.checked) {
+                                newBonusItems[product.id] = { quantity: 1, price: productPrice }
+                              } else {
+                                delete newBonusItems[product.id]
+                              }
+                              setFormData({ ...formData, bonusItems: newBonusItems })
+                            }}
+                            className="mr-2"
+                          />
+                          {product.images.edges[0]?.node && (
+                            <Image
+                              src={product.images.edges[0].node.url}
+                              alt={product.images.edges[0].node.altText || ''}
+                              width={32}
+                              height={32}
+                              className="rounded-md mr-2 object-cover"
+                            />
+                          )}
+                          <span className="flex-1 truncate text-sm">{product.title}</span>
+                          {isSelected && (
+                            <div className="flex items-center mr-2">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  if (quantity > 1) {
+                                    setFormData({
+                                      ...formData,
+                                      bonusItems: {
+                                        ...formData.bonusItems,
+                                        [product.id]: { quantity: quantity - 1, price: productPrice }
+                                      }
+                                    })
+                                  }
+                                }}
+                                className="px-1 text-gray-500 hover:text-gray-700"
+                              >
+                                -
+                              </button>
+                              <span className="mx-1 text-sm">{quantity}</span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  setFormData({
+                                    ...formData,
+                                    bonusItems: {
+                                      ...formData.bonusItems,
+                                      [product.id]: { quantity: quantity + 1, price: productPrice }
+                                    }
+                                  })
+                                }}
+                                className="px-1 text-gray-500 hover:text-gray-700"
+                              >
+                                +
+                              </button>
+                            </div>
+                          )}
+                          <span className="ml-2 text-sm text-gray-600 whitespace-nowrap">
+                            ${productPrice.toFixed(2)}
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-gray-600 py-2">No bonus items available</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="note" className="block text-sm font-medium text-gray-700 mb-1">
+                  Your Valentine&apos;s Note
+                </label>
+                <textarea
+                  id="note"
+                  value={formData.note}
+                  onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  rows={4}
+                  placeholder="Write your Valentine's message here..."
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-between pt-4">
+              <button
+                onClick={handlePrevStep}
+                className="px-4 py-2 text-gray-600 hover:text-gray-900"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={handleOrderSubmit}
+                disabled={!formData.note}
+                className="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Place Order - ${(formData.bagPrice + Object.values(formData.bonusItems).reduce((total, item) => total + (item.price * item.quantity), 0)).toFixed(2)}
+              </button>
+            </div>
+          </div>
+        )
+    }
+  }
+
+  const handleOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Handle order submission
-    console.log('Order submitted:', formData)
-    setShowOrderModal(false)
+    
+    try {
+      // Create a new cart
+      const cartResponse = await shopifyClient.request<CartCreateResponse>(CART_CREATE_MUTATION)
+      const cartId = cartResponse.cartCreate.cart.id
+
+      // Prepare line items
+      const lineItems = [
+        // Add the base Puppy Palentines bag
+        {
+          merchandiseId: "gid://shopify/ProductVariant/47863292133659", // Puppy Palentines product variant ID
+          quantity: 1,
+          attributes: [
+            {
+              key: "Price",
+              value: `$${formData.bagPrice}.00`
+            },
+            {
+              key: "Note",
+              value: formData.note
+            },
+            {
+              key: "Dog Name",
+              value: formData.dogName
+            },
+            {
+              key: "Delivery Info",
+              value: formData.knowsAddress 
+                ? `${formData.addressLine1}${formData.addressLine2 ? `, ${formData.addressLine2}` : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`
+                : `Need to find: ${formData.ownerInfo}`
+            }
+          ]
+        },
+        // Add bonus items - convert product IDs to variant IDs
+        ...Object.entries(formData.bonusItems).map(([productId, item]) => {
+          // Extract the numeric ID and create the variant ID
+          const numericId = productId.split('/').pop() || ''
+          return {
+            merchandiseId: `gid://shopify/ProductVariant/${numericId}`,
+            quantity: item.quantity
+          }
+        })
+      ]
+
+      // Add items to cart
+      const updatedCartResponse = await shopifyClient.request<CartAddLinesResponse>(
+        CART_ADD_LINES_MUTATION,
+        {
+          cartId,
+          lines: lineItems
+        }
+      )
+
+      // Get checkout URL
+      const checkoutUrl = updatedCartResponse.cartLinesAdd.cart.checkoutUrl
+
+      // Redirect to checkout
+      window.location.href = checkoutUrl
+    } catch (error) {
+      console.error('Error creating checkout:', error)
+    }
   }
 
   return (
@@ -146,7 +654,7 @@ export default function PuppyPalentines() {
           {/* Hero Section */}
           <div className="text-center mb-16">
             <h1 className="text-4xl font-bold text-pink-600 mb-4">
-              Puppy Palentines 🐾
+              Puppy Palentines 
             </h1>
             <p className="text-xl text-gray-600 mb-8">
               Spread some puppy love this Valentine&apos;s Day by sending a surprise treat bag to your furry friends!
@@ -282,80 +790,7 @@ export default function PuppyPalentines() {
                 </button>
               </div>
               
-              <form onSubmit={handleOrderSubmit} className="space-y-4">
-                <div>
-                  <label htmlFor="dogName" className="block text-sm font-medium text-gray-700 mb-1">
-                    Lucky Pup&apos;s Name
-                  </label>
-                  <input
-                    type="text"
-                    id="dogName"
-                    value={formData.dogName}
-                    onChange={(e) => setFormData({ ...formData, dogName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="ownerNames" className="block text-sm font-medium text-gray-700 mb-1">
-                    Owner Name(s)
-                  </label>
-                  <input
-                    type="text"
-                    id="ownerNames"
-                    value={formData.ownerNames}
-                    onChange={(e) => setFormData({ ...formData, ownerNames: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                    Delivery Address
-                  </label>
-                  <textarea
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                    rows={3}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="note" className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Valentine&apos;s Note
-                  </label>
-                  <textarea
-                    id="note"
-                    value={formData.note}
-                    onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                    rows={4}
-                    placeholder="Write your Valentine's message here..."
-                    required
-                  />
-                </div>
-
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowOrderModal(false)}
-                    className="px-4 py-2 text-gray-700 hover:text-gray-900"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 transition-colors"
-                  >
-                    Place Order - $20
-                  </button>
-                </div>
-              </form>
+              {renderStep()}
             </div>
           </div>
         )}

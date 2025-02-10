@@ -1,11 +1,12 @@
 export const PRODUCTS_QUERY = `
   query Products {
-    products(first: 20) {
+    products(first: 100) {
       edges {
         node {
           id
           title
           handle
+          vendor
           description
           priceRange {
             minVariantPrice {
@@ -135,6 +136,32 @@ export const COLLECTIONS_WITH_PRODUCTS_QUERY = `
   }
 `;
 
+export interface CartCreateResponse {
+  cartCreate: {
+    cart: {
+      id: string
+      checkoutUrl: string
+    }
+    userErrors: Array<{
+      field: string[]
+      message: string
+    }>
+  }
+}
+
+export interface CartAddLinesResponse {
+  cartLinesAdd: {
+    cart: {
+      id: string
+      checkoutUrl: string
+    }
+    userErrors: Array<{
+      field: string[]
+      message: string
+    }>
+  }
+}
+
 export const CART_CREATE_MUTATION = `
   mutation cartCreate {
     cartCreate {
@@ -156,6 +183,28 @@ export const CART_ADD_LINES_MUTATION = `
       cart {
         id
         checkoutUrl
+        lines(first: 10) {
+          edges {
+            node {
+              id
+              quantity
+              merchandise {
+                ... on ProductVariant {
+                  id
+                  title
+                  price {
+                    amount
+                    currencyCode
+                  }
+                }
+              }
+              attributes {
+                key
+                value
+              }
+            }
+          }
+        }
       }
       userErrors {
         field
