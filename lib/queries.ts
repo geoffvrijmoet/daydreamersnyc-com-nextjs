@@ -14,6 +14,19 @@ export const PRODUCTS_QUERY = `
               currencyCode
             }
           }
+          variants(first: 1) {
+            edges {
+              node {
+                id
+                title
+                price {
+                  amount
+                  currencyCode
+                }
+                availableForSale
+              }
+            }
+          }
           images(first: 1) {
             edges {
               node {
@@ -168,6 +181,20 @@ export const CART_CREATE_MUTATION = `
       cart {
         id
         checkoutUrl
+        lines(first: 10) {
+          edges {
+            node {
+              id
+              quantity
+              merchandise {
+                ... on ProductVariant {
+                  id
+                  title
+                }
+              }
+            }
+          }
+        }
       }
       userErrors {
         field
@@ -192,10 +219,6 @@ export const CART_ADD_LINES_MUTATION = `
                 ... on ProductVariant {
                   id
                   title
-                  price {
-                    amount
-                    currencyCode
-                  }
                 }
               }
               attributes {

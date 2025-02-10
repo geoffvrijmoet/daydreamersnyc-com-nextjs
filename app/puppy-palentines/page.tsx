@@ -4,13 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import Script from 'next/script'
 import Image from 'next/image'
 import { shopifyClient } from '@/lib/shopify'
-import { 
-  PRODUCTS_QUERY, 
-  CART_CREATE_MUTATION, 
-  CART_ADD_LINES_MUTATION,
-  CartCreateResponse,
-  CartAddLinesResponse
-} from '@/lib/queries'
+import { PRODUCTS_QUERY } from '@/lib/queries'
 
 interface YouTubePlayer {
   destroy: () => void
@@ -67,6 +61,13 @@ interface ShopifyProduct {
       currencyCode: string
     }
   }
+  variants: {
+    edges: Array<{
+      node: {
+        id: string
+      }
+    }>
+  }
   images: {
     edges: Array<{
       node: {
@@ -100,6 +101,16 @@ interface GraphQLProductsResponse {
       node: ShopifyProduct
     }>
   }
+}
+
+const PRESET_VARIANT_IDS = {
+  20: '49936312140059',
+  25: '49936312172827',
+  30: '49936312205595',
+  35: '49936312238363',
+  40: '49936312271131',
+  45: '49936312303899',
+  50: '49936312336667'
 }
 
 export default function PuppyPalentines() {
@@ -569,7 +580,7 @@ export default function PuppyPalentines() {
                 disabled={!formData.note}
                 className="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Place Order - ${(formData.bagPrice + Object.values(formData.bonusItems).reduce((total, item) => total + (item.price * item.quantity), 0)).toFixed(2)}
+                Checkout - ${(formData.bagPrice + Object.values(formData.bonusItems).reduce((total, item) => total + (item.price * item.quantity), 0)).toFixed(2)}
               </button>
             </div>
           </div>
@@ -581,64 +592,116 @@ export default function PuppyPalentines() {
     e.preventDefault()
     
     try {
-      // Create a new cart
-      const cartResponse = await shopifyClient.request<CartCreateResponse>(CART_CREATE_MUTATION)
-      const cartId = cartResponse.cartCreate.cart.id
-
-      // Prepare line items
-      const lineItems = [
-        // Add the base Puppy Palentines bag
-        {
-          merchandiseId: "gid://shopify/ProductVariant/47863292133659", // Puppy Palentines product variant ID
-          quantity: 1,
-          attributes: [
-            {
-              key: "Price",
-              value: `$${formData.bagPrice}.00`
-            },
-            {
-              key: "Note",
-              value: formData.note
-            },
-            {
-              key: "Dog Name",
-              value: formData.dogName
-            },
-            {
-              key: "Delivery Info",
-              value: formData.knowsAddress 
-                ? `${formData.addressLine1}${formData.addressLine2 ? `, ${formData.addressLine2}` : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`
-                : `Need to find: ${formData.ownerInfo}`
+      // Check if the amount is a preset amount or custom
+      const isPresetAmount = formData.bagPrice in PRESET_VARIANT_IDS
+      
+      if (isPresetAmount) {
+        // Use regular cart checkout for preset amounts
+        const variantId = PRESET_VARIANT_IDS[formData.bagPrice as keyof typeof PRESET_VARIANT_IDS]
+        
+        // Prepare bonus items
+        const cartBonusItems = Object.entries(formData.bonusItems)
+          .map(([productId, item]) => {
+            const product = bonusProducts.find(p => p.id === productId)
+            if (!product?.variants?.edges?.[0]?.node?.id) {
+              console.error('No variant ID found for product:', productId)
+              return null
             }
-          ]
-        },
-        // Add bonus items - convert product IDs to variant IDs
-        ...Object.entries(formData.bonusItems).map(([productId, item]) => {
-          // Extract the numeric ID and create the variant ID
-          const numericId = productId.split('/').pop() || ''
-          return {
-            merchandiseId: `gid://shopify/ProductVariant/${numericId}`,
-            quantity: item.quantity
-          }
+            return {
+              merchandiseId: product.variants.edges[0].node.id,
+              quantity: item.quantity
+            }
+          })
+          .filter(Boolean)
+
+        // Create cart with the selected variant
+        const cartResponse = await fetch('/api/shopify/cart', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            items: [
+              {
+                merchandiseId: `gid://shopify/ProductVariant/${variantId}`,
+                quantity: 1,
+                attributes: [
+                  { key: "Dog Name", value: formData.dogName },
+                  { key: "Note", value: formData.note },
+                  { key: "Delivery Info", value: formData.knowsAddress 
+                    ? `${formData.addressLine1}${formData.addressLine2 ? `, ${formData.addressLine2}` : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`
+                    : `Need to find: ${formData.ownerInfo}`
+                  }
+                ]
+              },
+              ...cartBonusItems
+            ]
+          })
         })
-      ]
 
-      // Add items to cart
-      const updatedCartResponse = await shopifyClient.request<CartAddLinesResponse>(
-        CART_ADD_LINES_MUTATION,
-        {
-          cartId,
-          lines: lineItems
+        if (!cartResponse.ok) {
+          const error = await cartResponse.json()
+          throw new Error(`Failed to create cart: ${JSON.stringify(error)}`)
         }
-      )
 
-      // Get checkout URL
-      const checkoutUrl = updatedCartResponse.cartLinesAdd.cart.checkoutUrl
+        const cartData = await cartResponse.json()
+        
+        // Redirect to checkout
+        if (cartData.checkoutUrl) {
+          window.location.href = cartData.checkoutUrl
+        } else {
+          throw new Error('No checkout URL returned')
+        }
+      } else {
+        // Use draft order for custom amount
+        const draftOrderBonusItems = Object.entries(formData.bonusItems)
+          .map(([productId, item]) => {
+            const product = bonusProducts.find(p => p.id === productId)
+            if (!product?.variants?.edges?.[0]?.node?.id) {
+              console.error('No variant ID found for product:', productId)
+              return null
+            }
+            return {
+              variantId: product.variants.edges[0].node.id,
+              quantity: item.quantity
+            }
+          })
+          .filter(Boolean)
 
-      // Redirect to checkout
-      window.location.href = checkoutUrl
+        // Create draft order
+        const response = await fetch('/api/shopify/draft-order', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            bagPrice: formData.bagPrice,
+            dogName: formData.dogName,
+            note: formData.note,
+            deliveryInfo: formData.knowsAddress 
+              ? `${formData.addressLine1}${formData.addressLine2 ? `, ${formData.addressLine2}` : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`
+              : `Need to find: ${formData.ownerInfo}`,
+            bonusItems: draftOrderBonusItems
+          })
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(`Failed to create draft order: ${JSON.stringify(error)}`)
+        }
+
+        const data = await response.json()
+        
+        // Redirect to invoice URL
+        if (data.invoiceUrl) {
+          window.location.href = data.invoiceUrl
+        } else {
+          throw new Error('No invoice URL returned')
+        }
+      }
     } catch (error) {
-      console.error('Error creating checkout:', error)
+      console.error('Error creating order:', error)
+      alert('An error occurred while creating your order. Please try again.')
     }
   }
 
