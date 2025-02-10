@@ -6,9 +6,9 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   try {
     // Check if this is a Shopify cart URL
     if (request.nextUrl.pathname.startsWith('/cart/')) {
-      // Get the full URL and replace the domain with the Shopify domain
-      const url = request.url.replace('daydreamersnyc.com', 'daydreamers-pet-supply.myshopify.com')
-      return NextResponse.redirect(new URL(url))
+      // Construct a new URL with explicit HTTPS protocol
+      const shopifyUrl = new URL(request.nextUrl.pathname + request.nextUrl.search, 'https://daydreamers-pet-supply.myshopify.com')
+      return NextResponse.redirect(shopifyUrl)
     }
 
     // Add authentication logic here when we implement Shopify customer accounts
