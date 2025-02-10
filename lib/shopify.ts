@@ -103,7 +103,7 @@ export const createCart = `
             currencyCode
           }
         }
-        lines {
+        lines(first: 250) {
           edges {
             node {
               id
