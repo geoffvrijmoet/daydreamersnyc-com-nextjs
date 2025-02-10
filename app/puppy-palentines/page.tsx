@@ -596,50 +596,57 @@ export default function PuppyPalentines() {
       const isPresetAmount = formData.bagPrice in PRESET_VARIANT_IDS
       
       if (isPresetAmount) {
-        // Use Shopify's cart permalink format for preset amounts
         const variantId = PRESET_VARIANT_IDS[formData.bagPrice as keyof typeof PRESET_VARIANT_IDS]
         
-        // Build the cart URL with all items
-        let cartUrl = `https://daydreamers-pet-supply.myshopify.com/cart/${variantId}:1`
-        
-        // Add bonus items to the cart URL
-        const bonusItems = Object.entries(formData.bonusItems)
-          .map(([productId, item]) => {
-            const product = bonusProducts.find(p => p.id === productId)
-            if (!product?.variants?.edges?.[0]?.node?.id) {
-              console.error('No variant ID found for product:', productId)
-              return null
-            }
-            // Extract the numeric ID from the GraphQL ID
-            const variantId = product.variants.edges[0].node.id.split('/').pop()
-            return `${variantId}:${item.quantity}`
-          })
-          .filter(Boolean)
-        
-        if (bonusItems.length > 0) {
-          cartUrl += ',' + bonusItems.join(',')
-        }
-
-        // Add attributes as URL parameters
-        const attributes = [
-          { key: "Dog_Name", value: formData.dogName },
-          { key: "Note", value: formData.note },
-          { key: "Delivery_Info", value: formData.knowsAddress 
-            ? `${formData.addressLine1}${formData.addressLine2 ? `, ${formData.addressLine2}` : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`
-            : `Need to find: ${formData.ownerInfo}`
+        // Prepare line items for the cart
+        const lineItems = [
+          {
+            merchandiseId: `gid://shopify/ProductVariant/${variantId}`,
+            quantity: 1
           }
         ]
+        
+        // Add bonus items
+        Object.entries(formData.bonusItems).forEach(([productId, item]) => {
+          const product = bonusProducts.find(p => p.id === productId)
+          if (product?.variants?.edges?.[0]?.node?.id) {
+            // Extract the numeric ID from the GraphQL ID
+            const variantId = product.variants.edges[0].node.id.split('/').pop()
+            lineItems.push({
+              merchandiseId: `gid://shopify/ProductVariant/${variantId}`,
+              quantity: item.quantity
+            })
+          }
+        })
 
-        // Add attributes to the URL
-        cartUrl += '?' + attributes.map(attr => 
-          `attributes[${encodeURIComponent(attr.key)}]=${encodeURIComponent(attr.value)}`
-        ).join('&')
+        // Create cart using Storefront API
+        const response = await fetch('/api/shopify/checkout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            lineItems,
+            customAttributes: [
+              { key: "Dog_Name", value: formData.dogName },
+              { key: "Note", value: formData.note },
+              { key: "Delivery_Info", value: formData.knowsAddress 
+                ? `${formData.addressLine1}${formData.addressLine2 ? `, ${formData.addressLine2}` : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`
+                : `Need to find: ${formData.ownerInfo}`
+              }
+            ]
+          })
+        })
 
-        // Add checkout parameter to redirect directly to checkout
-        cartUrl += '&checkout=true'
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(`Failed to create cart: ${JSON.stringify(error)}`)
+        }
 
-        console.log('Redirecting to cart URL:', cartUrl)
-        window.location.href = cartUrl
+        const { checkoutUrl } = await response.json()
+        
+        // Use window.location.replace for a hard redirect
+        window.location.replace(checkoutUrl)
       } else {
         // Use draft order for custom amount
         const draftOrderBonusItems = Object.entries(formData.bonusItems)
