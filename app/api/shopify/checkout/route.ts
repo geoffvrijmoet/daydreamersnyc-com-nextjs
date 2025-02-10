@@ -33,29 +33,30 @@ export async function POST(request: Request) {
       )
     }
 
-    console.log('Original checkout URL:', response.cartCreate.cart.checkoutUrl)
+    // Get the original checkout URL
+    const originalCheckoutUrl = response.cartCreate.cart.checkoutUrl
+    console.log('Original checkout URL:', originalCheckoutUrl)
 
     // Set cart ID in cookies
     cookies().set('cartId', response.cartCreate.cart.id)
 
-    // Use the myshopify domain for now
-    const checkoutUrl = response.cartCreate.cart.checkoutUrl.replace(
-      /^https?:\/\/[^\/]+/,
-      'https://daydreamers-pet-supply.myshopify.com'
-    )
+    // Parse the original URL to preserve the path and query parameters
+    const originalUrl = new URL(originalCheckoutUrl)
     
+    // Construct new checkout URL with myshopify domain
+    const checkoutUrl = `https://daydreamers-pet-supply.myshopify.com${originalUrl.pathname}${originalUrl.search}`
     console.log('Modified checkout URL:', checkoutUrl)
 
-    // Validate the URL before returning
     try {
+      // Validate the URL
       const url = new URL(checkoutUrl)
       if (!url.hostname.includes('myshopify.com')) {
         throw new Error('Invalid checkout domain')
       }
       console.log('Final checkout URL:', url.toString())
-    } catch {
-      console.error('Invalid checkout URL:', checkoutUrl)
-      throw new Error('Invalid checkout URL returned from Shopify')
+    } catch (error) {
+      console.error('URL validation error:', error)
+      throw new Error('Invalid checkout URL')
     }
 
     return NextResponse.json({
