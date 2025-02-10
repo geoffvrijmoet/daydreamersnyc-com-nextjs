@@ -1,65 +1,47 @@
 import { NextResponse } from 'next/server'
-import { shopifyClient, createCheckout } from '@/lib/shopify'
+import { cookies } from 'next/headers'
+import { shopifyClient, createCart, CartResponse } from '@/lib/shopify'
 
 interface LineItem {
-  variantId: string
+  merchandiseId: string
   quantity: number
+  attributes?: Array<{
+    key: string
+    value: string
+  }>
 }
 
-interface CustomAttribute {
-  key: string
-  value: string
-}
-
-interface CheckoutInput {
-  lineItems: LineItem[]
-  customAttributes: CustomAttribute[]
-}
-
-interface CheckoutResponse {
-  checkoutCreate: {
-    checkout: {
-      webUrl: string
-    }
-    checkoutUserErrors: Array<{
-      code: string
-      field: string[]
-      message: string
-    }>
-  }
+interface CartInput {
+  lines: LineItem[]
 }
 
 export async function POST(request: Request) {
   try {
-    const { lineItems, customAttributes } = await request.json() as CheckoutInput
+    const { lines } = await request.json() as CartInput
 
-    // Create the checkout
-    const response = await shopifyClient.request<CheckoutResponse>(createCheckout, {
-      input: {
-        lineItems: lineItems.map(item => ({
-          variantId: item.variantId,
-          quantity: item.quantity
-        })),
-        customAttributes,
-      },
+    const response = await shopifyClient.request<CartResponse>(createCart, {
+      input: { lines }
     })
 
-    if (response.checkoutCreate.checkoutUserErrors.length > 0) {
-      console.error('Checkout creation errors:', response.checkoutCreate.checkoutUserErrors)
+    if (response.cartCreate.userErrors.length > 0) {
+      console.error('Cart creation errors:', response.cartCreate.userErrors)
       return NextResponse.json(
-        { error: 'There was an error generating the checkoutURL. Please try again.' },
+        { error: 'There was an error creating the cart. Please try again.' },
         { status: 400 }
       )
     }
 
-    return NextResponse.json(
-      { checkoutUrl: response.checkoutCreate.checkout.webUrl },
-      { status: 201 }
-    )
+    // Set cart ID in cookies
+    cookies().set('cartId', response.cartCreate.cart.id)
+
+    return NextResponse.json({
+      cart: response.cartCreate.cart,
+      checkoutUrl: response.cartCreate.cart.checkoutUrl
+    }, { status: 201 })
   } catch (error) {
-    console.error('Error creating checkout:', error)
+    console.error('Error creating cart:', error)
     return NextResponse.json(
-      { error: 'There was an error generating the checkoutURL. Please try again.' },
+      { error: 'There was an error creating the cart. Please try again.' },
       { status: 500 }
     )
   }

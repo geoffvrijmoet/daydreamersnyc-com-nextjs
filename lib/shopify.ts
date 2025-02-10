@@ -10,13 +10,45 @@ interface ShopifyResponse<T> {
   }>
 }
 
-export interface CheckoutResponse {
-  checkoutCreate: {
-    checkout: {
-      webUrl: string
+export interface CartResponse {
+  cartCreate: {
+    cart: {
+      id: string
+      checkoutUrl: string
+      cost: {
+        totalAmount: {
+          amount: string
+          currencyCode: string
+        }
+        totalTaxAmount: {
+          amount: string
+          currencyCode: string
+        }
+      }
+      lines: Array<{
+        id: string
+        quantity: number
+        cost: {
+          totalAmount: {
+            amount: string
+            currencyCode: string
+          }
+        }
+        merchandise: {
+          id: string
+          title: string
+          product: {
+            title: string
+            handle: string
+            featuredImage: {
+              url: string
+              altText: string | null
+            }
+          }
+        }
+      }>
     }
-    checkoutUserErrors: Array<{
-      code: string
+    userErrors: Array<{
       field: string[]
       message: string
     }>
@@ -50,14 +82,46 @@ export const shopifyClient = {
   }
 }
 
-export const createCheckout = `
-  mutation checkoutCreate($input: CheckoutCreateInput!) {
-    checkoutCreate(input: $input) {
-      checkout {
-        webUrl
+export const createCart = `
+  mutation cartCreate($input: CartInput!) {
+    cartCreate(input: $input) {
+      cart {
+        id
+        checkoutUrl
+        cost {
+          totalAmount {
+            amount
+            currencyCode
+          }
+          totalTaxAmount {
+            amount
+            currencyCode
+          }
+        }
+        lines {
+          id
+          quantity
+          cost {
+            totalAmount {
+              amount
+              currencyCode
+            }
+          }
+          merchandise {
+            id
+            title
+            product {
+              title
+              handle
+              featuredImage {
+                url
+                altText
+              }
+            }
+          }
+        }
       }
-      checkoutUserErrors {
-        code
+      userErrors {
         field
         message
       }
