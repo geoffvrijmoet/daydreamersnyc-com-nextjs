@@ -19,6 +19,15 @@ const aloevera = localFont({
 export const metadata: Metadata = {
   title: 'Daydreamers Pet Supply',
   description: 'Premium pet supplies for your furry friends',
+  icons: {
+    icon: [
+      { url: '/favicon.png', type: 'image/png', sizes: '32x32' },
+      { url: '/favicon-192x192.png', type: 'image/png', sizes: '192x192' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', type: 'image/png' },
+    ],
+  },
 }
 
 export default function RootLayout({

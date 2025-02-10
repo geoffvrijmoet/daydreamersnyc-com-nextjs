@@ -20,6 +20,7 @@ interface CartContextType {
   removeItem: (productId: string, title?: string) => void
   resetCart: () => void
   total: number
+  isLoading: boolean
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
@@ -57,11 +58,21 @@ function findCartItem(items: CartItem[], productId: string, title?: string): Car
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>(() => loadFromStorage())
+  const [items, setItems] = useState<CartItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Load cart data only once on mount
+  useEffect(() => {
+    const loadedItems = loadFromStorage()
+    setItems(loadedItems)
+    setIsLoading(false)
+  }, [])
 
   useEffect(() => {
-    saveToStorage(items)
-  }, [items])
+    if (!isLoading) {
+      saveToStorage(items)
+    }
+  }, [items, isLoading])
 
   const addItem = (newItem: CartItem) => {
     setItems(currentItems => {
@@ -112,7 +123,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, 0)
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, resetCart, total }}>
+    <CartContext.Provider value={{
+      items,
+      addItem,
+      removeItem,
+      resetCart,
+      total,
+      isLoading
+    }}>
       {children}
     </CartContext.Provider>
   )

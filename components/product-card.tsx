@@ -11,12 +11,12 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const { items, addItem, removeItem } = useCart()
+  const { items, addItem, removeItem, isLoading } = useCart()
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0)
   const [quantity, setQuantity] = useState(0)
   const firstImage = product.images.edges[0]?.node
   const variants = product.variants.edges.map(edge => edge.node)
-  const isIceCream = product.title === "Strawberry Shortcake" || product.title === "Allergy Fighter"
+  const isIceCream = product.isIceCream || product.title === "Strawberry Shortcake" || product.title === "Allergy Fighter"
   const isVivaRaw = product.title.includes("Viva Raw")
 
   // Log Viva Raw variants
@@ -145,7 +145,20 @@ export function ProductCard({ product }: ProductCardProps) {
 
   // Sync with cart quantity on mount and when cart changes
   useEffect(() => {
+    if (isLoading) {
+      console.log('Cart still loading in ProductCard...')
+      return
+    }
+
     const productId = isIceCream ? product.id : selectedVariant?.id
+    console.log('ProductCard checking cart for:', { 
+      productId, 
+      title: isVivaRaw 
+        ? `${product.title} - ${selectedAnimalType} / ${selectedProteinType}`
+        : product.title,
+      items 
+    })
+
     const cartItem = items.find(item => {
       if (isIceCream) {
         return item.productId === product.id
@@ -157,16 +170,18 @@ export function ProductCard({ product }: ProductCardProps) {
       }
     })
     
+    console.log('ProductCard found cart item:', cartItem)
     if (cartItem) {
       setQuantity(cartItem.quantity)
     } else {
       setQuantity(0)
     }
   }, [
-    items, 
-    isIceCream, 
+    items,
+    isLoading,
+    isIceCream,
     isVivaRaw,
-    product.id, 
+    product.id,
     product.title,
     selectedVariant?.id,
     selectedAnimalType,
@@ -226,8 +241,12 @@ export function ProductCard({ product }: ProductCardProps) {
             </h3>
           </Link>
           
-          {isIceCream && product.description && (
-            <p className="text-sm text-gray-600 mt-1">{product.description}</p>
+          {isIceCream && (
+            <p className="text-sm text-gray-600 mt-1">
+              {product.title === "Strawberry Shortcake" 
+                ? "Kefir, Strawberries, Applesauce, Honey"
+                : "Kefir, Pumpkin, Blueberries, Bee Pollen, Honey"}
+            </p>
           )}
           
           {isVivaRaw && vivaRawOptions && (

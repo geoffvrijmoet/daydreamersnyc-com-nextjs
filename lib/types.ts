@@ -3,6 +3,7 @@ export interface Product {
   title: string;
   handle: string;
   description: string;
+  isIceCream?: boolean;
   priceRange: {
     minVariantPrice: {
       amount: string;
@@ -13,13 +14,24 @@ export interface Product {
     edges: Array<{
       node: {
         url: string;
-        altText: string;
+        altText: string | null;
       };
     }>;
   };
   variants: {
     edges: Array<{
-      node: ProductVariant;
+      node: {
+        id: string;
+        title: string;
+        price: {
+          amount: string;
+          currencyCode: string;
+        };
+        image?: {
+          url: string;
+          altText: string | null;
+        };
+      };
     }>;
   };
 }

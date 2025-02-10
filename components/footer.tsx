@@ -8,7 +8,7 @@ export function Footer() {
           <div>
             <h3 className="font-bold mb-4">About Us</h3>
             <p className="text-sm text-gray-600">
-              Daydreamers Pet Supply - Premium products for your furry friends.
+              Daydreamers is an ice cream and snack bar for dogs based in Brooklyn, NY. Find us at our pop-up locations in Brooklyn dog parks!
             </p>
           </div>
           
@@ -16,8 +16,8 @@ export function Footer() {
             <h3 className="font-bold mb-4">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/products" className="text-sm hover:text-primary">
-                  Products
+                <Link href="/menu" className="text-sm hover:text-primary">
+                  Menu
                 </Link>
               </li>
               <li>
@@ -51,6 +51,16 @@ export function Footer() {
                   FAQ
                 </Link>
               </li>
+              <li>
+                <Link href="/terms" className="text-sm hover:text-primary">
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy" className="text-sm hover:text-primary">
+                  Privacy Policy
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -58,13 +68,13 @@ export function Footer() {
             <h3 className="font-bold mb-4">Contact</h3>
             <p className="text-sm text-gray-600">
               Email: info@daydreamersnyc.com<br />
-              Phone: (555) 123-4567
+              Phone: (541) 359-5481
             </p>
           </div>
         </div>
         
         <div className="mt-8 pt-8 border-t text-center text-sm text-gray-600">
-          © {new Date().getFullYear()} Daydreamers Pet Supply. All rights reserved.
+          © {new Date().getFullYear()} Daydreamers Pet Supply LLC. All rights reserved.
         </div>
       </div>
     </footer>

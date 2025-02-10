@@ -13,7 +13,7 @@ interface ProductPageClientProps {
 }
 
 export function ProductPageClient({ product }: ProductPageClientProps) {
-  const { items, addItem, removeItem } = useCart()
+  const { items, addItem, removeItem, isLoading } = useCart()
   const images = product.images.edges.map(edge => edge.node)
   const firstVariant = product.variants.edges[0]?.node
   const variants = product.variants.edges.map(edge => edge.node)
@@ -50,12 +50,19 @@ export function ProductPageClient({ product }: ProductPageClientProps) {
 
   // Keep quantity in sync with cart
   useEffect(() => {
+    if (isLoading) {
+      console.log('Cart still loading...')
+      return
+    }
+
     const productId = isIceCream ? product.id : selectedVariant?.id
     if (!productId) return
 
     const title = isIceCream 
       ? product.title 
       : `${product.title} - ${selectedVariant?.title || ''}`
+
+    console.log('Checking cart for:', { productId, title, items })
 
     const cartItem = items.find(item => {
       if (isIceCream) {
@@ -65,8 +72,9 @@ export function ProductPageClient({ product }: ProductPageClientProps) {
       }
     })
     
+    console.log('Found cart item:', cartItem)
     setQuantity(cartItem?.quantity || 0)
-  }, [items, isIceCream, product.id, product.title, selectedVariant])
+  }, [items, isLoading, isIceCream, product.id, product.title, selectedVariant])
 
   const handleVariantChange = (variantId: string, price: string, currency: string) => {
     const variant = variants.find(v => v.id === variantId)

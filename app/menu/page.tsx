@@ -1,9 +1,8 @@
 import { shopifyClient } from '@/lib/shopify'
 import { COLLECTIONS_WITH_PRODUCTS_QUERY } from '@/lib/queries'
-import { ProductCard } from '@/components/product-card'
 import type { CollectionsResponse, Collection } from '@/lib/types'
-import { CartProvider } from '@/lib/cart-context'
 import { CartTotal } from '@/components/cart-total'
+import { MenuContent } from '@/components/menu-content'
 
 // Define the order of collections - this determines priority
 const MENU_SECTION_ORDER = {
@@ -55,44 +54,31 @@ export default async function MenuPage() {
           }
           return false
         })
-        .flatMap(({ node: product }) => {
-          // If this is the ice cream product, create hardcoded variants
+        .map(({ node: product }) => {
+          // If this is the ice cream product with variants, create separate products
           if (product.title === "Organic Doggy Ice Cream") {
-            return [
-              {
+            const variants = product.variants.edges.map(edge => edge.node)
+            return variants.map(variant => ({
+              node: {
                 ...product,
-                title: "Strawberry Shortcake",
-                id: product.id + "-shortcake",
-                description: "Kefir, Strawberries, Applesauce, Honey",
+                id: variant.id, // Use variant ID as product ID
+                title: variant.title, // Use variant title as product title
+                isIceCream: true,
                 priceRange: {
-                  minVariantPrice: {
-                    amount: "3.00",
-                    currencyCode: "USD"
-                  }
-                }
-              },
-              {
-                ...product,
-                title: "Allergy Fighter",
-                id: product.id + "-allergy",
-                description: "Kefir, Pumpkin, Blueberries, Bee Pollen, Honey",
-                priceRange: {
-                  minVariantPrice: {
-                    amount: "3.00",
-                    currencyCode: "USD"
-                  }
+                  minVariantPrice: variant.price
                 }
               }
-            ]
+            }))
           }
-          // Otherwise return the product as is
-          return [product]
+          return { node: product }
         })
+        .flat() // Flatten the array since ice cream variants create nested arrays
 
       return {
         ...collection,
         products: {
-          edges: uniqueProducts.map(product => ({ node: product }))
+          ...collection.products,
+          edges: uniqueProducts
         }
       }
     })
@@ -100,30 +86,10 @@ export default async function MenuPage() {
     .filter(collection => collection.products.edges.length > 0)
 
   return (
-    <CartProvider>
-      <div className="container max-w-3xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-quicksand font-bold text-eggplant mb-8">Our Menu</h1>
-        
-        <div className="space-y-12">
-          {menuSections.map((collection) => (
-            <section key={collection.id}>
-              <h2 className="text-2xl font-quicksand font-bold text-eggplant mb-6">
-                {collection.title}
-              </h2>
-              <div className="space-y-4">
-                {collection.products.edges.map(({ node: product }) => (
-                  <ProductCard 
-                    key={product.id} 
-                    product={product}
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      </div>
+    <div className="container max-w-3xl mx-auto px-4 py-8">
+      <MenuContent menuSections={menuSections} />
       <CartTotal />
-    </CartProvider>
+    </div>
   )
 }
 

@@ -21,9 +21,8 @@ export function Logo({ className, showDog = false }: LogoProps) {
             />
           </div>
         )}
-        <div className="text-2xl text-eggplant font-aloevera">
+        <div className="text-4xl text-eggplant font-aloevera">
           daydreamers
-          <span className="block text-sm font-quicksand">doggy ice cream</span>
         </div>
       </div>
     </Link>

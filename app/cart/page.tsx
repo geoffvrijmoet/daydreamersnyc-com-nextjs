@@ -1,5 +1,5 @@
-import { CartProvider } from '@/components/cart-provider'
+import { CartUI } from '@/components/cart-ui'
 
 export default function CartPage() {
-  return <CartProvider />
+  return <CartUI />
 } 
