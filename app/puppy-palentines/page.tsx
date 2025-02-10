@@ -598,10 +598,10 @@ export default function PuppyPalentines() {
       if (isPresetAmount) {
         const variantId = PRESET_VARIANT_IDS[formData.bagPrice as keyof typeof PRESET_VARIANT_IDS]
         
-        // Prepare line items for the cart
+        // Prepare line items for the checkout
         const lineItems = [
           {
-            merchandiseId: `gid://shopify/ProductVariant/${variantId}`,
+            variantId: `gid://shopify/ProductVariant/${variantId}`,
             quantity: 1
           }
         ]
@@ -613,13 +613,13 @@ export default function PuppyPalentines() {
             // Extract the numeric ID from the GraphQL ID
             const variantId = product.variants.edges[0].node.id.split('/').pop()
             lineItems.push({
-              merchandiseId: `gid://shopify/ProductVariant/${variantId}`,
+              variantId: `gid://shopify/ProductVariant/${variantId}`,
               quantity: item.quantity
             })
           }
         })
 
-        // Create cart using Storefront API
+        // Create checkout using Storefront API
         const response = await fetch('/api/shopify/checkout', {
           method: 'POST',
           headers: {
@@ -640,13 +640,13 @@ export default function PuppyPalentines() {
 
         if (!response.ok) {
           const error = await response.json()
-          throw new Error(`Failed to create cart: ${JSON.stringify(error)}`)
+          throw new Error(`Failed to create checkout: ${JSON.stringify(error)}`)
         }
 
         const { checkoutUrl } = await response.json()
         
-        // Use window.location.replace for a hard redirect
-        window.location.replace(checkoutUrl)
+        // Use window.location.href for a hard redirect
+        window.location.href = checkoutUrl
       } else {
         // Use draft order for custom amount
         const draftOrderBonusItems = Object.entries(formData.bonusItems)

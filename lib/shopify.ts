@@ -10,9 +10,16 @@ interface ShopifyResponse<T> {
   }>
 }
 
-interface CartResponse {
-  cart: {
-    checkoutUrl: string
+export interface CheckoutResponse {
+  checkoutCreate: {
+    checkout: {
+      webUrl: string
+    }
+    checkoutUserErrors: Array<{
+      code: string
+      field: string[]
+      message: string
+    }>
   }
 }
 
@@ -43,22 +50,17 @@ export const shopifyClient = {
   }
 }
 
-export const getCheckoutUrl = async (cartId: string) => {
-  const getCheckoutUrlQuery = `
-    query checkoutURL($cartId: ID!) {
-      cart(id: $cartId) {
-        checkoutUrl
+export const createCheckout = `
+  mutation checkoutCreate($input: CheckoutCreateInput!) {
+    checkoutCreate(input: $input) {
+      checkout {
+        webUrl
+      }
+      checkoutUserErrors {
+        code
+        field
+        message
       }
     }
-  `
-
-  try {
-    const response = await shopifyClient.request<CartResponse>(getCheckoutUrlQuery, {
-      cartId: cartId,
-    })
-
-    return response.cart.checkoutUrl
-  } catch (error) {
-    throw new Error(error instanceof Error ? error.message : 'Failed to get checkout URL')
   }
-}
+`

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { shopifyClient } from '@/lib/shopify'
+import { shopifyClient, createCheckout } from '@/lib/shopify'
 
 interface LineItem {
-  merchandiseId: string
+  variantId: string
   quantity: number
 }
 
@@ -11,63 +11,56 @@ interface CustomAttribute {
   value: string
 }
 
-interface CartInput {
+interface CheckoutInput {
   lineItems: LineItem[]
   customAttributes: CustomAttribute[]
 }
 
-interface CartCreateResponse {
-  cartCreate: {
-    cart: {
-      id: string
-      checkoutUrl: string
+interface CheckoutResponse {
+  checkoutCreate: {
+    checkout: {
+      webUrl: string
     }
-    userErrors: Array<{
+    checkoutUserErrors: Array<{
+      code: string
       field: string[]
       message: string
     }>
   }
 }
 
-const CREATE_CART_MUTATION = `
-  mutation cartCreate($input: CartInput!) {
-    cartCreate(input: $input) {
-      cart {
-        id
-        checkoutUrl
-      }
-      userErrors {
-        field
-        message
-      }
-    }
-  }
-`
-
 export async function POST(request: Request) {
   try {
-    const { lineItems, customAttributes } = await request.json() as CartInput
+    const { lineItems, customAttributes } = await request.json() as CheckoutInput
 
-    // Create the cart
-    const cartResponse = await shopifyClient.request<CartCreateResponse>(CREATE_CART_MUTATION, {
+    // Create the checkout
+    const response = await shopifyClient.request<CheckoutResponse>(createCheckout, {
       input: {
-        lines: lineItems.map(item => ({
-          merchandiseId: item.merchandiseId,
+        lineItems: lineItems.map(item => ({
+          variantId: item.variantId,
           quantity: item.quantity
         })),
-        attributes: customAttributes,
+        customAttributes,
       },
     })
 
-    if (cartResponse.cartCreate.userErrors.length > 0) {
-      console.error('Cart creation errors:', cartResponse.cartCreate.userErrors)
-      return NextResponse.json({ error: cartResponse.cartCreate.userErrors[0].message }, { status: 400 })
+    if (response.checkoutCreate.checkoutUserErrors.length > 0) {
+      console.error('Checkout creation errors:', response.checkoutCreate.checkoutUserErrors)
+      return NextResponse.json(
+        { error: 'There was an error generating the checkoutURL. Please try again.' },
+        { status: 400 }
+      )
     }
 
-    // Return the checkout URL directly from Shopify
-    return NextResponse.json({ checkoutUrl: cartResponse.cartCreate.cart.checkoutUrl })
+    return NextResponse.json(
+      { checkoutUrl: response.checkoutCreate.checkout.webUrl },
+      { status: 201 }
+    )
   } catch (error) {
-    console.error('Error creating cart:', error)
-    return NextResponse.json({ error: 'Failed to create cart' }, { status: 500 })
+    console.error('Error creating checkout:', error)
+    return NextResponse.json(
+      { error: 'There was an error generating the checkoutURL. Please try again.' },
+      { status: 500 }
+    )
   }
 } 
