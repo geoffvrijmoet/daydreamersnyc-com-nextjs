@@ -38,10 +38,10 @@ export async function POST(request: Request) {
     // Set cart ID in cookies
     cookies().set('cartId', response.cartCreate.cart.id)
 
-    // Use checkout subdomain for custom domain checkout
+    // Since we're getting access denied, let's use the original myshopify domain
     const checkoutUrl = response.cartCreate.cart.checkoutUrl.replace(
       /^https?:\/\/[^\/]+/,
-      'https://checkout.daydreamersnyc.com'
+      'https://daydreamers-pet-supply.myshopify.com'
     )
     
     console.log('Modified checkout URL:', checkoutUrl)
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     // Validate the URL before returning
     try {
       const url = new URL(checkoutUrl)
-      if (url.hostname !== 'checkout.daydreamersnyc.com') {
+      if (!url.hostname.includes('myshopify.com')) {
         throw new Error('Invalid checkout domain')
       }
       console.log('Final checkout URL:', url.toString())
