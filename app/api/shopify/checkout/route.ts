@@ -38,17 +38,24 @@ export async function POST(request: Request) {
     // Set cart ID in cookies
     cookies().set('cartId', response.cartCreate.cart.id)
 
-    // Use the original checkout URL but replace the domain using regex
+    // For headless commerce, ensure we're using the Shopify checkout domain
     const checkoutUrl = response.cartCreate.cart.checkoutUrl.replace(
       /^https?:\/\/[^\/]+/,
       'https://checkout.shopify.com'
+    ).replace(
+      'daydreamersnyc.com',
+      'daydreamers-pet-supply.myshopify.com'
     )
     
     console.log('Modified checkout URL:', checkoutUrl)
 
     // Validate the URL before returning
     try {
-      new URL(checkoutUrl)
+      const url = new URL(checkoutUrl)
+      if (!url.hostname.includes('shopify.com')) {
+        throw new Error('Invalid checkout domain')
+      }
+      console.log('Final checkout URL:', url.toString())
     } catch {
       console.error('Invalid checkout URL:', checkoutUrl)
       throw new Error('Invalid checkout URL returned from Shopify')
