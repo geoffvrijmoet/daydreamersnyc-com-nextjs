@@ -67,7 +67,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: data.cartCreate.userErrors[0].message }, { status: 400 })
     }
 
-    return NextResponse.json({ checkoutUrl: data.cartCreate.cart.checkoutUrl })
+    // Get the checkout URL and ensure it uses the custom domain
+    let checkoutUrl = data.cartCreate.cart.checkoutUrl
+    
+    // Convert the URL to use the custom domain and add checkout=true
+    const url = new URL(checkoutUrl)
+    url.hostname = 'daydreamersnyc.com'
+    url.searchParams.append('checkout', 'true')
+    checkoutUrl = url.toString()
+
+    return NextResponse.json({ checkoutUrl })
   } catch (error) {
     console.error('Error creating cart:', error)
     return NextResponse.json({ error: 'Failed to create cart' }, { status: 500 })
