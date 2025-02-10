@@ -25,28 +25,32 @@ export interface CartResponse {
           currencyCode: string
         }
       }
-      lines: Array<{
-        id: string
-        quantity: number
-        cost: {
-          totalAmount: {
-            amount: string
-            currencyCode: string
-          }
-        }
-        merchandise: {
-          id: string
-          title: string
-          product: {
-            title: string
-            handle: string
-            featuredImage: {
-              url: string
-              altText: string | null
+      lines: {
+        edges: Array<{
+          node: {
+            id: string
+            quantity: number
+            cost: {
+              totalAmount: {
+                amount: string
+                currencyCode: string
+              }
+            }
+            merchandise: {
+              id: string
+              title: string
+              product: {
+                title: string
+                handle: string
+                featuredImage: {
+                  url: string
+                  altText: string | null
+                }
+              }
             }
           }
-        }
-      }>
+        }>
+      }
     }
     userErrors: Array<{
       field: string[]
@@ -99,23 +103,27 @@ export const createCart = `
           }
         }
         lines {
-          id
-          quantity
-          cost {
-            totalAmount {
-              amount
-              currencyCode
-            }
-          }
-          merchandise {
-            id
-            title
-            product {
-              title
-              handle
-              featuredImage {
-                url
-                altText
+          edges {
+            node {
+              id
+              quantity
+              cost {
+                totalAmount {
+                  amount
+                  currencyCode
+                }
+              }
+              merchandise {
+                id
+                title
+                product {
+                  title
+                  handle
+                  featuredImage {
+                    url
+                    altText
+                  }
+                }
               }
             }
           }
