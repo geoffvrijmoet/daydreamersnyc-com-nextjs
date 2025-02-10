@@ -644,8 +644,18 @@ export default function PuppyPalentines() {
 
         const { checkoutUrl } = await response.json()
         
-        // Use window.location.replace for a hard redirect
-        window.location.replace(checkoutUrl)
+        // Validate and clean the checkout URL
+        try {
+          const url = new URL(checkoutUrl)
+          if (!url.hostname.includes('checkout.shopify.com')) {
+            throw new Error('Invalid checkout domain')
+          }
+          // Use window.location.replace for a hard redirect
+          window.location.replace(url.toString())
+        } catch {
+          console.error('Invalid checkout URL:', checkoutUrl)
+          throw new Error('Invalid checkout URL returned from Shopify')
+        }
       } else {
         // Use draft order for custom amount
         const draftOrderBonusItems = Object.entries(formData.bonusItems)

@@ -19,6 +19,8 @@ export async function POST(request: Request) {
   try {
     const { lines } = await request.json() as CartInput
 
+    console.log('Creating cart with lines:', lines)
+
     const response = await shopifyClient.request<CartResponse>(createCart, {
       input: { lines }
     })
@@ -31,14 +33,20 @@ export async function POST(request: Request) {
       )
     }
 
+    console.log('Original checkout URL:', response.cartCreate.cart.checkoutUrl)
+
     // Set cart ID in cookies
     cookies().set('cartId', response.cartCreate.cart.id)
 
-    // Ensure checkout URL uses the Shopify domain
-    const checkoutUrl = response.cartCreate.cart.checkoutUrl.replace(
-      'daydreamers-pet-supply.myshopify.com',
-      'checkout.shopify.com'
-    )
+    // Get the cart URL parts
+    const originalUrl = new URL(response.cartCreate.cart.checkoutUrl)
+    const pathname = originalUrl.pathname
+    const search = originalUrl.search
+
+    // Construct new checkout URL
+    const checkoutUrl = `https://checkout.shopify.com${pathname}${search}`
+    
+    console.log('Modified checkout URL:', checkoutUrl)
 
     // Validate the URL before redirecting
     try {
@@ -49,7 +57,10 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      cart: response.cartCreate.cart,
+      cart: {
+        ...response.cartCreate.cart,
+        checkoutUrl
+      },
       checkoutUrl
     }, { status: 201 })
   } catch (error) {
