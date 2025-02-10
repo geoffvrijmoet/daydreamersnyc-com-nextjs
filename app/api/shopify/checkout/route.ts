@@ -64,15 +64,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: cartResponse.cartCreate.userErrors[0].message }, { status: 400 })
     }
 
-    // Get the checkout URL
-    const checkoutUrl = cartResponse.cartCreate.cart.checkoutUrl
-
-    // Ensure the URL uses the custom domain
-    const url = new URL(checkoutUrl)
-    url.hostname = 'daydreamersnyc.com'
-    url.searchParams.append('checkout', 'true')
-
-    return NextResponse.json({ checkoutUrl: url.toString() })
+    // Return the checkout URL directly from Shopify
+    return NextResponse.json({ checkoutUrl: cartResponse.cartCreate.cart.checkoutUrl })
   } catch (error) {
     console.error('Error creating cart:', error)
     return NextResponse.json({ error: 'Failed to create cart' }, { status: 500 })
