@@ -65,23 +65,39 @@ type Variables = Record<string, unknown>
 export const shopifyClient = {
   async request<T>(query: string, variables?: Variables): Promise<T> {
     try {
+      console.log('Making Shopify request to:', endpoint)
+      console.log('With access token:', SHOPIFY_STOREFRONT_ACCESS_TOKEN ? 'Present' : 'Missing')
+      
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_ACCESS_TOKEN,
+          'Accept': 'application/json',
         },
         body: JSON.stringify({ query, variables }),
       })
 
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Shopify API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        })
+        throw new Error(`Shopify API error: ${response.status} ${response.statusText}`)
+      }
+
       const { data, errors } = (await response.json()) as ShopifyResponse<T>
 
       if (errors) {
+        console.error('GraphQL errors:', errors)
         throw new Error(JSON.stringify(errors))
       }
 
       return data
     } catch (error) {
+      console.error('Shopify request failed:', error)
       throw new Error(error instanceof Error ? error.message : 'Failed to fetch from Shopify')
     }
   }
