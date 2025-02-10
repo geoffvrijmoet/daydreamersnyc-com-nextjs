@@ -4,9 +4,11 @@ import type { NextRequest } from 'next/server'
 // This function can be marked `async` if using `await` inside
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   try {
-    // Allow Shopify checkout URLs to pass through
-    if (request.nextUrl.pathname.startsWith('/cart/c/') || request.nextUrl.pathname.startsWith('/checkouts/')) {
-      return NextResponse.rewrite(new URL(`https://daydreamers-pet-supply.myshopify.com${request.nextUrl.pathname}${request.nextUrl.search}`, request.url))
+    // Check if this is a Shopify cart URL
+    if (request.nextUrl.pathname.startsWith('/cart/')) {
+      // Get the full URL and replace the domain with the Shopify domain
+      const url = request.url.replace('daydreamersnyc.com', 'daydreamers-pet-supply.myshopify.com')
+      return NextResponse.redirect(new URL(url))
     }
 
     // Add authentication logic here when we implement Shopify customer accounts
@@ -25,8 +27,7 @@ export const config = {
      * Match paths that need authentication:
      * - /account (customer account pages)
      * - /api (API routes except auth)
-     * - /cart/c/* (Shopify cart URLs)
-     * - /checkouts/* (Shopify checkout URLs)
+     * - /cart (Shopify cart URLs)
      * Skip:
      * - api/auth (authentication endpoints)
      * - _next/static (static files)
@@ -35,7 +36,6 @@ export const config = {
      */
     '/account/:path*',
     '/api/((?!auth|webhooks).*)',
-    '/cart/c/:path*',
-    '/checkouts/:path*',
+    '/cart/:path*',
   ],
 } as const

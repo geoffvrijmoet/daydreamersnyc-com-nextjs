@@ -596,64 +596,50 @@ export default function PuppyPalentines() {
       const isPresetAmount = formData.bagPrice in PRESET_VARIANT_IDS
       
       if (isPresetAmount) {
-        // Use regular cart checkout for preset amounts
+        // Use Shopify's cart permalink format for preset amounts
         const variantId = PRESET_VARIANT_IDS[formData.bagPrice as keyof typeof PRESET_VARIANT_IDS]
         
-        // Prepare bonus items
-        const cartBonusItems = Object.entries(formData.bonusItems)
+        // Build the cart URL with all items
+        let cartUrl = `https://daydreamers-pet-supply.myshopify.com/cart/${variantId}:1`
+        
+        // Add bonus items to the cart URL
+        const bonusItems = Object.entries(formData.bonusItems)
           .map(([productId, item]) => {
             const product = bonusProducts.find(p => p.id === productId)
             if (!product?.variants?.edges?.[0]?.node?.id) {
               console.error('No variant ID found for product:', productId)
               return null
             }
-            return {
-              merchandiseId: product.variants.edges[0].node.id,
-              quantity: item.quantity
-            }
+            // Extract the numeric ID from the GraphQL ID
+            const variantId = product.variants.edges[0].node.id.split('/').pop()
+            return `${variantId}:${item.quantity}`
           })
           .filter(Boolean)
-
-        // Create cart with the selected variant
-        const cartResponse = await fetch('/api/shopify/cart', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            items: [
-              {
-                merchandiseId: `gid://shopify/ProductVariant/${variantId}`,
-                quantity: 1,
-                attributes: [
-                  { key: "Dog Name", value: formData.dogName },
-                  { key: "Note", value: formData.note },
-                  { key: "Delivery Info", value: formData.knowsAddress 
-                    ? `${formData.addressLine1}${formData.addressLine2 ? `, ${formData.addressLine2}` : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`
-                    : `Need to find: ${formData.ownerInfo}`
-                  }
-                ]
-              },
-              ...cartBonusItems
-            ]
-          })
-        })
-
-        if (!cartResponse.ok) {
-          const error = await cartResponse.json()
-          throw new Error(`Failed to create cart: ${JSON.stringify(error)}`)
-        }
-
-        const cartData = await cartResponse.json()
         
-        // Redirect to checkout
-        if (cartData.checkoutUrl) {
-          console.log('Redirecting to checkout URL:', cartData.checkoutUrl)
-          // Use window.location.replace for a hard redirect to the Shopify checkout URL
-          window.location.replace(cartData.checkoutUrl)
-        } else {
-          throw new Error('No checkout URL returned')
+        if (bonusItems.length > 0) {
+          cartUrl += ',' + bonusItems.join(',')
         }
+
+        // Add attributes as URL parameters
+        const attributes = [
+          { key: "Dog_Name", value: formData.dogName },
+          { key: "Note", value: formData.note },
+          { key: "Delivery_Info", value: formData.knowsAddress 
+            ? `${formData.addressLine1}${formData.addressLine2 ? `, ${formData.addressLine2}` : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`
+            : `Need to find: ${formData.ownerInfo}`
+          }
+        ]
+
+        // Add attributes to the URL
+        cartUrl += '?' + attributes.map(attr => 
+          `attributes[${encodeURIComponent(attr.key)}]=${encodeURIComponent(attr.value)}`
+        ).join('&')
+
+        // Add checkout parameter to redirect directly to checkout
+        cartUrl += '&checkout=true'
+
+        console.log('Redirecting to cart URL:', cartUrl)
+        window.location.href = cartUrl
       } else {
         // Use draft order for custom amount
         const draftOrderBonusItems = Object.entries(formData.bonusItems)

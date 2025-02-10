@@ -67,9 +67,13 @@ export async function POST(request: Request) {
       throw new Error(JSON.stringify(response.cartCreate.userErrors))
     }
 
-    // Use the checkout URL directly from Shopify
-    const checkoutUrl = response.cartCreate.cart.checkoutUrl
-    console.log('Checkout URL:', checkoutUrl)
+    // Get the checkout URL from Shopify's response
+    const shopifyCheckoutUrl = response.cartCreate.cart.checkoutUrl
+    console.log('Shopify checkout URL:', shopifyCheckoutUrl)
+
+    // Ensure it's using the Shopify domain
+    const checkoutUrl = shopifyCheckoutUrl.replace('daydreamersnyc.com', 'daydreamers-pet-supply.myshopify.com')
+    console.log('Final checkout URL:', checkoutUrl)
 
     return NextResponse.json({
       checkoutUrl
