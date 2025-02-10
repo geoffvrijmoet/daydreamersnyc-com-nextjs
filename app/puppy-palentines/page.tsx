@@ -599,10 +599,18 @@ export default function PuppyPalentines() {
         const variantId = PRESET_VARIANT_IDS[formData.bagPrice as keyof typeof PRESET_VARIANT_IDS]
         
         // Prepare line items for the checkout
-        const lineItems = [
+        const lines = [
           {
-            variantId: `gid://shopify/ProductVariant/${variantId}`,
-            quantity: 1
+            merchandiseId: `gid://shopify/ProductVariant/${variantId}`,
+            quantity: 1,
+            attributes: [
+              { key: "Dog_Name", value: formData.dogName },
+              { key: "Note", value: formData.note },
+              { key: "Delivery_Info", value: formData.knowsAddress 
+                ? `${formData.addressLine1}${formData.addressLine2 ? `, ${formData.addressLine2}` : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`
+                : `Need to find: ${formData.ownerInfo}`
+              }
+            ]
           }
         ]
         
@@ -612,41 +620,32 @@ export default function PuppyPalentines() {
           if (product?.variants?.edges?.[0]?.node?.id) {
             // Extract the numeric ID from the GraphQL ID
             const variantId = product.variants.edges[0].node.id.split('/').pop()
-            lineItems.push({
-              variantId: `gid://shopify/ProductVariant/${variantId}`,
-              quantity: item.quantity
+            lines.push({
+              merchandiseId: `gid://shopify/ProductVariant/${variantId}`,
+              quantity: item.quantity,
+              attributes: [] // Add empty attributes array for bonus items
             })
           }
         })
 
-        // Create checkout using Storefront API
+        // Create cart using Storefront API
         const response = await fetch('/api/shopify/checkout', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            lineItems,
-            customAttributes: [
-              { key: "Dog_Name", value: formData.dogName },
-              { key: "Note", value: formData.note },
-              { key: "Delivery_Info", value: formData.knowsAddress 
-                ? `${formData.addressLine1}${formData.addressLine2 ? `, ${formData.addressLine2}` : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`
-                : `Need to find: ${formData.ownerInfo}`
-              }
-            ]
-          })
+          body: JSON.stringify({ lines })
         })
 
         if (!response.ok) {
           const error = await response.json()
-          throw new Error(`Failed to create checkout: ${JSON.stringify(error)}`)
+          throw new Error(`Failed to create cart: ${JSON.stringify(error)}`)
         }
 
         const { checkoutUrl } = await response.json()
         
-        // Use window.location.href for a hard redirect
-        window.location.href = checkoutUrl
+        // Use window.location.replace for a hard redirect
+        window.location.replace(checkoutUrl)
       } else {
         // Use draft order for custom amount
         const draftOrderBonusItems = Object.entries(formData.bonusItems)
