@@ -38,15 +38,15 @@ export async function POST(request: Request) {
     // Set cart ID in cookies
     cookies().set('cartId', response.cartCreate.cart.id)
 
-    // Use the original checkout URL but replace the domain
-    const checkoutUrl = response.cartCreate.cart.checkoutUrl.replace(
-      'daydreamers-pet-supply.myshopify.com',
-      'checkout.shopify.com'
-    )
+    // Parse the original URL to get the path and query
+    const originalUrl = new URL(response.cartCreate.cart.checkoutUrl)
+    
+    // Construct new URL with checkout.shopify.com domain
+    const checkoutUrl = `https://checkout.shopify.com${originalUrl.pathname}${originalUrl.search}`
     
     console.log('Modified checkout URL:', checkoutUrl)
 
-    // Validate the URL before redirecting
+    // Validate the URL before returning
     try {
       new URL(checkoutUrl)
     } catch {

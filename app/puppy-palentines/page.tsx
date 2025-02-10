@@ -643,7 +643,8 @@ export default function PuppyPalentines() {
         }
 
         const { checkoutUrl } = await response.json()
-        
+        console.log('Received checkout URL:', checkoutUrl)
+
         // Validate and clean the checkout URL
         try {
           const url = new URL(checkoutUrl)
