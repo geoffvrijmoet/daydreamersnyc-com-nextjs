@@ -6,6 +6,8 @@ const ADMIN_ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN
 interface BonusItem {
   variantId: string
   quantity: number
+  title?: string
+  price?: number
 }
 
 interface DraftOrderRequestBody {
@@ -40,13 +42,10 @@ export async function POST(request: Request) {
           { name: "Delivery Info", value: deliveryInfo }
         ]
       },
-      ...bonusItems.map((item) => {
-        const numericId = item.variantId.split('/').pop() || ''
-        return {
-          variant_id: numericId,
-          quantity: item.quantity
-        }
-      })
+      ...bonusItems.map((item) => ({
+        variant_id: item.variantId.split('/').pop() || '',
+        quantity: item.quantity
+      }))
     ]
 
     // Create draft order
@@ -70,7 +69,9 @@ export async function POST(request: Request) {
                   province: deliveryInfo.split(',')[2].trim().split(' ')[1],
                   zip: deliveryInfo.split(',')[2].trim().split(' ')[2],
                   country: 'US'
-                }
+                },
+            // Skip shipping requirement if address is unknown
+            requires_shipping: !deliveryInfo.includes('Need to find:')
           }
         })
       }

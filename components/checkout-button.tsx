@@ -13,7 +13,57 @@ export function CheckoutButton() {
     try {
       setIsLoading(true)
 
-      // Create checkout directly with all items
+      // Check if any items are Puppy Palentines variants
+      const puppyPalentinesVariants = [
+        '49936312140059', // $20
+        '49936312172827', // $25
+        '49936312205595', // $30
+        '49936312238363', // $35
+        '49936312271131', // $40
+        '49936312303899', // $45
+        '49936312336667'  // $50
+      ]
+
+      const hasPuppyPalentinesItem = items.some(item => 
+        puppyPalentinesVariants.includes(item.productId)
+      )
+
+      if (hasPuppyPalentinesItem) {
+        // For Puppy Palentines, create a draft order with all items
+        const response = await fetch('/api/shopify/draft-order', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            bagPrice: Number(items.find(item => 
+              puppyPalentinesVariants.includes(item.productId)
+            )?.price || 20),
+            dogName: 'TBD', // Will be filled in form
+            note: 'TBD',    // Will be filled in form
+            deliveryInfo: 'TBD', // Will be filled in form
+            bonusItems: items
+              .filter(item => !puppyPalentinesVariants.includes(item.productId))
+              .map(item => ({
+                variantId: item.productId,
+                quantity: item.quantity,
+                title: item.title,
+                price: Number(item.price)
+              }))
+          })
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.message || 'Failed to create draft order')
+        }
+
+        await response.json() // Just check the response is valid
+        window.location.href = '/puppy-palentines'
+        return
+      }
+
+      // Regular checkout flow for non-Puppy Palentines items
       const response = await fetch('/api/shopify/checkout', {
         method: 'POST',
         headers: {
@@ -23,7 +73,9 @@ export function CheckoutButton() {
           lines: items.map(item => ({
             variantId: item.productId,
             quantity: item.quantity
-          }))
+          })),
+          // Check URL for no-shipping parameter
+          requiresShipping: !window.location.search.includes('no-shipping=true')
         })
       })
 

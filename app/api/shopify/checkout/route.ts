@@ -23,6 +23,7 @@ interface ShippingAddress {
 interface CartInput {
   lines: LineItem[]
   shippingAddress?: ShippingAddress
+  requiresShipping?: boolean
 }
 
 interface CartResponse {
@@ -40,10 +41,11 @@ interface CartResponse {
 
 export async function POST(request: Request) {
   try {
-    const { lines, shippingAddress } = await request.json() as CartInput;
+    const { lines, shippingAddress, requiresShipping = true } = await request.json() as CartInput;
 
     console.log('Creating cart with lines:', lines);
     console.log('Shipping address:', shippingAddress);
+    console.log('Requires shipping:', requiresShipping);
 
     // Convert variantId to merchandiseId format
     const cartLines = lines.map(line => ({
@@ -57,7 +59,12 @@ export async function POST(request: Request) {
     // Create cart
     const response = await shopifyClient.request<CartResponse>(createCart, {
       input: {
-        lines: cartLines
+        lines: cartLines,
+        deliveryGroups: requiresShipping ? undefined : [{ 
+          deliveryOptions: [{ 
+            handle: "no-shipping-required" 
+          }]
+        }]
       }
     });
 
