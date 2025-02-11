@@ -2,9 +2,6 @@
 
 import { useState } from 'react'
 import { useCart } from '@/lib/cart-context'
-import { shopifyClient } from '@/lib/shopify'
-import { CART_CREATE_MUTATION, CART_ADD_LINES_MUTATION } from '@/lib/queries'
-import type { CartCreateResponse, CartLinesAddResponse } from '@/lib/types'
 
 export function CheckoutButton() {
   const { items } = useCart()
@@ -16,35 +13,29 @@ export function CheckoutButton() {
     try {
       setIsLoading(true)
 
-      // 1. Create a new cart
-      const { cartCreate } = await shopifyClient.request<CartCreateResponse>(CART_CREATE_MUTATION)
+      // Create checkout directly with all items
+      const response = await fetch('/api/shopify/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          lines: items.map(item => ({
+            variantId: item.productId,
+            quantity: item.quantity
+          }))
+        })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to create checkout')
+      }
+
+      const { checkoutUrl } = await response.json()
       
-      if (cartCreate.userErrors.length > 0) {
-        throw new Error(cartCreate.userErrors[0].message)
-      }
-
-      const cartId = cartCreate.cart.id
-
-      // 2. Add items to cart
-      const lines = items.map(item => ({
-        merchandiseId: item.productId,
-        quantity: item.quantity
-      }))
-
-      const { cartLinesAdd } = await shopifyClient.request<CartLinesAddResponse>(
-        CART_ADD_LINES_MUTATION,
-        {
-          cartId,
-          lines
-        }
-      )
-
-      if (cartLinesAdd.userErrors.length > 0) {
-        throw new Error(cartLinesAdd.userErrors[0].message)
-      }
-
-      // 3. Redirect to checkout
-      window.location.href = cartLinesAdd.cart.checkoutUrl
+      // Redirect to checkout
+      window.location.href = checkoutUrl
     } catch (error) {
       console.error('Checkout error:', error)
       alert('There was an error starting checkout. Please try again.')
