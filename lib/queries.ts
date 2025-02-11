@@ -27,7 +27,7 @@ export const PRODUCTS_QUERY = `
               }
             }
           }
-          images(first: 1) {
+          images(first: 5) {
             edges {
               node {
                 url

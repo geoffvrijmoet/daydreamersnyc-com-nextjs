@@ -78,7 +78,6 @@ type Variables = Record<string, unknown>
 
 export const shopifyClient = {
   async request<T>(query: string, variables?: Variables): Promise<T> {
-    console.log(NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN)
     try {
       console.log('Making Shopify request to:', endpoint)
       console.log('With access token:', SHOPIFY_STOREFRONT_ACCESS_TOKEN ? 'Present' : 'Missing')

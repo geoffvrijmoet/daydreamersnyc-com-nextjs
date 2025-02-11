@@ -217,6 +217,16 @@ export default function PuppyPalentines() {
       const products = data.products.edges
         .map(edge => edge.node)
         .filter(product => {
+          // Only include products that:
+          // 1. Have at least one variant
+          // 2. Have a price
+          // 3. Have an image
+          // 4. Are not in the excluded list
+          // 5. Are not from excluded vendors
+          if (!product.variants?.edges?.[0]?.node) return false
+          if (!product.priceRange?.minVariantPrice?.amount) return false
+          if (!product.images?.edges?.[0]?.node?.url) return false
+          
           // Extract numeric ID from GraphQL ID (format: gid://shopify/Product/NUMERIC_ID)
           const numericId = product.id.split('/').pop() || ''
           
@@ -241,9 +251,11 @@ export default function PuppyPalentines() {
           ]
           return !excludedVendors.includes(product.vendor)
         })
+      console.log('Filtered products:', products.length)
       setBonusProducts(products)
     } catch (error) {
       console.error('Error fetching bonus products:', error)
+      setBonusProducts([])
     } finally {
       setIsLoadingProducts(false)
     }
@@ -459,14 +471,19 @@ export default function PuppyPalentines() {
                 </label>
                 {isLoadingProducts ? (
                   <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500 mx-auto mb-2"></div>
                     <p className="text-gray-600">Loading bonus items...</p>
                   </div>
                 ) : bonusProducts.length > 0 ? (
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                     {bonusProducts.map((product) => {
+                      const variant = product.variants?.edges?.[0]?.node
+                      const image = product.images?.edges?.[0]?.node
                       const productPrice = parseFloat(product.priceRange.minVariantPrice.amount)
                       const isSelected = product.id in formData.bonusItems
                       const quantity = isSelected ? formData.bonusItems[product.id].quantity : 0
+                      
+                      if (!variant || !image) return null
                       
                       return (
                         <label
@@ -491,15 +508,13 @@ export default function PuppyPalentines() {
                             }}
                             className="mr-2"
                           />
-                          {product.images.edges[0]?.node && (
-                            <Image
-                              src={product.images.edges[0].node.url}
-                              alt={product.images.edges[0].node.altText || ''}
-                              width={32}
-                              height={32}
-                              className="rounded-md mr-2 object-cover"
-                            />
-                          )}
+                          <Image
+                            src={image.url}
+                            alt={image.altText || product.title}
+                            width={32}
+                            height={32}
+                            className="rounded-md mr-2 object-cover"
+                          />
                           <span className="flex-1 truncate text-sm">{product.title}</span>
                           {isSelected && (
                             <div className="flex items-center mr-2">
@@ -548,7 +563,15 @@ export default function PuppyPalentines() {
                     })}
                   </div>
                 ) : (
-                  <p className="text-gray-600 py-2">No bonus items available</p>
+                  <div className="text-center py-4">
+                    <p className="text-gray-600">No bonus items available at this time</p>
+                    <button 
+                      onClick={fetchBonusProducts}
+                      className="mt-2 text-sm text-pink-500 hover:text-pink-600"
+                    >
+                      Try Again
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -601,7 +624,7 @@ export default function PuppyPalentines() {
         // Prepare line items for the checkout
         const lines = [
           {
-            merchandiseId: `gid://shopify/ProductVariant/${variantId}`,
+            variantId: `gid://shopify/ProductVariant/${variantId}`,
             quantity: 1,
             attributes: [
               { key: "Dog_Name", value: formData.dogName },
@@ -619,9 +642,9 @@ export default function PuppyPalentines() {
           const product = bonusProducts.find(p => p.id === productId)
           if (product?.variants?.edges?.[0]?.node?.id) {
             // Extract the numeric ID from the GraphQL ID
-            const variantId = product.variants.edges[0].node.id.split('/').pop()
+            const variantId = product.variants.edges[0].node.id
             lines.push({
-              merchandiseId: `gid://shopify/ProductVariant/${variantId}`,
+              variantId,
               quantity: item.quantity,
               attributes: [] // Add empty attributes array for bonus items
             })
@@ -645,18 +668,8 @@ export default function PuppyPalentines() {
         const { checkoutUrl } = await response.json()
         console.log('Received checkout URL:', checkoutUrl)
 
-        // Validate and clean the checkout URL
-        try {
-          const url = new URL(checkoutUrl)
-          if (!url.hostname.includes('checkout.shopify.com')) {
-            throw new Error('Invalid checkout domain')
-          }
-          // Use window.location.replace for a hard redirect
-          window.location.replace(url.toString())
-        } catch {
-          console.error('Invalid checkout URL:', checkoutUrl)
-          throw new Error('Invalid checkout URL returned from Shopify')
-        }
+        // Use window.location.replace for a hard redirect
+        window.location.replace(checkoutUrl)
       } else {
         // Use draft order for custom amount
         const draftOrderBonusItems = Object.entries(formData.bonusItems)
