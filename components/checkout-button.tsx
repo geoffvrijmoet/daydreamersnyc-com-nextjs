@@ -10,8 +10,6 @@ export function CheckoutButton() {
   if (items.length === 0) return null
 
   const handleCheckout = async () => {
-    return;
-    return;
     try {
       setIsLoading(true)
 
