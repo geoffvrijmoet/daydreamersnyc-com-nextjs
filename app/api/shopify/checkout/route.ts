@@ -29,11 +29,11 @@ interface CartResponse {
 }
 
 export async function POST(request: Request) {
+  
   try {
     const { lines } = await request.json() as CartInput;
 
     console.log('Creating cart with lines:', lines);
-
     // Convert variantId to merchandiseId format
     const cartLines = lines.map(line => ({
       merchandiseId: line.variantId.includes('gid://') 

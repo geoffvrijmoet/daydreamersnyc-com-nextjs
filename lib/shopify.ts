@@ -1,4 +1,4 @@
-import { SHOPIFY_STOREFRONT_ACCESS_TOKEN, NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN } from './constants'
+import { NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN, NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN } from './constants'
 
 const domain = `https://${NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN}`
 const endpoint = `${domain}/api/2024-01/graphql.json`
@@ -80,13 +80,13 @@ export const shopifyClient = {
   async request<T>(query: string, variables?: Variables): Promise<T> {
     try {
       console.log('Making Shopify request to:', endpoint)
-      console.log('With access token:', SHOPIFY_STOREFRONT_ACCESS_TOKEN ? 'Present' : 'Missing')
+      console.log('With access token:', NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN ? 'Present' : 'Missing')
       
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_ACCESS_TOKEN,
+          'X-Shopify-Storefront-Access-Token': NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN,
           'Accept': 'application/json',
         },
         body: JSON.stringify({ query, variables }),

@@ -1,3 +1,3 @@
 // Shopify Configuration
 export const NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN = 'daydreamers-pet-supply.myshopify.com'
-export const SHOPIFY_STOREFRONT_ACCESS_TOKEN = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN || '' 
+export const NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN || '' 
