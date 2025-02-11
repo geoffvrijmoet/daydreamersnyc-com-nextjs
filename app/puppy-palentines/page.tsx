@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import Script from 'next/script'
 import Image from 'next/image'
 import { shopifyClient } from '@/lib/shopify'
 import { PRODUCTS_QUERY } from '@/lib/queries'
@@ -33,10 +32,12 @@ declare global {
             fs?: number
             rel?: number
             modestbranding?: number
+            playsinline?: number
           }
           events?: {
             onReady?: (event: YouTubeEvent) => void
             onStateChange?: (event: YouTubeEvent) => void
+            onError?: (event: YouTubeEvent) => void
           }
         }
       ) => YouTubePlayer
@@ -138,10 +139,17 @@ export default function PuppyPalentines() {
   useEffect(() => {
     // Initialize YouTube API
     if (!window.YT) {
-      // This function will be called once the YouTube IFrame API is loaded
+      // Create a global callback function
       window.onYouTubeIframeAPIReady = () => {
+        console.log('YouTube API Ready')
         initializePlayer()
       }
+
+      // Load the IFrame Player API code asynchronously
+      const tag = document.createElement('script')
+      tag.src = 'https://www.youtube.com/iframe_api'
+      const firstScriptTag = document.getElementsByTagName('script')[0]
+      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
     } else {
       initializePlayer()
     }
@@ -161,6 +169,12 @@ export default function PuppyPalentines() {
   }, [showOrderModal, currentStep])
 
   const initializePlayer = () => {
+    console.log('Initializing player')
+    if (!document.getElementById('youtube-player')) {
+      console.error('YouTube player element not found')
+      return
+    }
+
     playerRef.current = new window.YT.Player('youtube-player', {
       height: '0',
       width: '0',
@@ -171,22 +185,25 @@ export default function PuppyPalentines() {
         disablekb: 1,
         fs: 0,
         rel: 0,
-        modestbranding: 1
+        modestbranding: 1,
+        playsinline: 1
       },
       events: {
         onReady: () => {
           console.log('Player ready')
           setIsPlayerReady(true)
         },
-        onStateChange: (event: YouTubeEvent) => {
+        onStateChange: (event) => {
           if (event.data === window.YT.PlayerState.ENDED) {
-            // Loop the video when it ends
             event.target.playVideo()
           } else if (event.data === window.YT.PlayerState.PLAYING) {
             setIsPlaying(true)
           } else if (event.data === window.YT.PlayerState.PAUSED) {
             setIsPlaying(false)
           }
+        },
+        onError: (event) => {
+          console.error('YouTube player error:', event)
         }
       }
     })
@@ -750,12 +767,10 @@ export default function PuppyPalentines() {
 
   return (
     <div className="relative min-h-screen pb-24">
-      <Script src="https://www.youtube.com/iframe_api" strategy="beforeInteractive" />
-      
       <div className="min-h-screen" style={{ backgroundColor: '#DDD1FF' }}>
         <div className="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
           {/* Hidden YouTube Player */}
-          <div id="youtube-player" className="hidden" />
+          <div id="youtube-player" style={{ position: 'absolute', top: '-9999px', left: '-9999px' }} />
 
           {/* Hero Section */}
           <div className="text-center mb-16">
