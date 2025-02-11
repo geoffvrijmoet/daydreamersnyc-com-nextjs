@@ -17,25 +17,28 @@ export default function HomePage() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col items-center justify-end h-full px-4 pb-16 pt-32">
+      <div className="relative z-10 flex flex-col items-center justify-end h-full px-4 pb-16 pt-8">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold font-quicksand text-eggplant mb-4">
+            Welcome to Daydreamers
+          </h1>
+          <p className="text-lg font-quicksand text-eggplant max-w-2xl mb-8">
+            We sell ice cream and other snacks for dogs at our pop-up locations in dog parks in Brooklyn, NY
+          </p>
+        </div>
+        
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link 
             href="/menu"
             className="px-8 py-4 bg-eggplant text-creamsicle rounded-full font-quicksand font-bold text-lg hover:bg-eggplant/90 transition-colors"
           >
-            Menu
-          </Link>
-          <Link 
-            href="/about"
-            className="px-8 py-4 bg-creamsicle text-eggplant rounded-full font-quicksand font-bold text-lg hover:bg-creamsicle/80 transition-colors"
-          >
-            About Us
+            View Our Menu
           </Link>
           <Link 
             href="https://training.daydreamersnyc.com"
             className="px-8 py-4 bg-eggplant text-creamsicle rounded-full font-quicksand font-bold text-lg hover:bg-eggplant/90 transition-colors"
           >
-            Training
+            Interested in Training?
           </Link>
         </div>
       </div>
