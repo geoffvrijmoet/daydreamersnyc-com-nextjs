@@ -1,6 +1,6 @@
-import { SHOPIFY_STOREFRONT_ACCESS_TOKEN, SHOPIFY_STORE_DOMAIN } from './constants'
+import { SHOPIFY_STOREFRONT_ACCESS_TOKEN, NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN } from './constants'
 
-const domain = `https://${SHOPIFY_STORE_DOMAIN}`
+const domain = `https://${NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN}`
 const endpoint = `${domain}/api/2024-01/graphql.json`
 
 interface ShopifyResponse<T> {
