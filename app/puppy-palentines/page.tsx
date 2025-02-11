@@ -621,6 +621,11 @@ export default function PuppyPalentines() {
       if (isPresetAmount) {
         const variantId = PRESET_VARIANT_IDS[formData.bagPrice as keyof typeof PRESET_VARIANT_IDS]
         
+        // Format the delivery address
+        const deliveryAddress = formData.knowsAddress 
+          ? `${formData.addressLine1}${formData.addressLine2 ? `, ${formData.addressLine2}` : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`
+          : `Need to find: ${formData.ownerInfo}`
+
         // Prepare line items for the checkout
         const lines = [
           {
@@ -628,11 +633,17 @@ export default function PuppyPalentines() {
             quantity: 1,
             attributes: [
               { key: "Dog_Name", value: formData.dogName },
-              { key: "Note", value: formData.note },
-              { key: "Delivery_Info", value: formData.knowsAddress 
-                ? `${formData.addressLine1}${formData.addressLine2 ? `, ${formData.addressLine2}` : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`
-                : `Need to find: ${formData.ownerInfo}`
-              }
+              { key: "Valentine_Message", value: formData.note },
+              { key: "Delivery_Info", value: deliveryAddress },
+              // Add individual address fields for Shopify checkout
+              ...(formData.knowsAddress ? [
+                { key: "address1", value: formData.addressLine1 },
+                { key: "address2", value: formData.addressLine2 || '' },
+                { key: "city", value: formData.city },
+                { key: "province", value: formData.state },
+                { key: "zip", value: formData.zipCode },
+                { key: "country", value: "US" }
+              ] : [])
             ]
           }
         ]
@@ -641,12 +652,12 @@ export default function PuppyPalentines() {
         Object.entries(formData.bonusItems).forEach(([productId, item]) => {
           const product = bonusProducts.find(p => p.id === productId)
           if (product?.variants?.edges?.[0]?.node?.id) {
-            // Extract the numeric ID from the GraphQL ID
-            const variantId = product.variants.edges[0].node.id
             lines.push({
-              variantId,
+              variantId: product.variants.edges[0].node.id,
               quantity: item.quantity,
-              attributes: [] // Add empty attributes array for bonus items
+              attributes: [
+                { key: "For_Dog", value: formData.dogName }
+              ]
             })
           }
         })
@@ -657,7 +668,20 @@ export default function PuppyPalentines() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ lines })
+          body: JSON.stringify({ 
+            lines,
+            // Add shipping address if known
+            ...(formData.knowsAddress && {
+              shippingAddress: {
+                address1: formData.addressLine1,
+                address2: formData.addressLine2 || '',
+                city: formData.city,
+                province: formData.state,
+                zip: formData.zipCode,
+                country: 'US'
+              }
+            })
+          })
         })
 
         if (!response.ok) {

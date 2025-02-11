@@ -11,8 +11,18 @@ interface LineItem {
   }>
 }
 
+interface ShippingAddress {
+  address1: string
+  address2?: string
+  city: string
+  province: string
+  zip: string
+  country: string
+}
+
 interface CartInput {
   lines: LineItem[]
+  shippingAddress?: ShippingAddress
 }
 
 interface CartResponse {
@@ -29,20 +39,33 @@ interface CartResponse {
 }
 
 export async function POST(request: Request) {
-  
   try {
-    const { lines } = await request.json() as CartInput;
+    const { lines, shippingAddress } = await request.json() as CartInput;
 
     console.log('Creating cart with lines:', lines);
-    // Convert variantId to merchandiseId format
-    const cartLines = lines.map(line => ({
+    console.log('Shipping address:', shippingAddress);
+
+    // Convert variantId to merchandiseId format and add shipping address to first line
+    const cartLines = lines.map((line, index) => ({
       merchandiseId: line.variantId.includes('gid://') 
         ? line.variantId 
         : `gid://shopify/ProductVariant/${line.variantId}`,
       quantity: line.quantity,
-      attributes: line.attributes
+      attributes: [
+        ...(line.attributes || []),
+        // Add shipping address to the first line item only
+        ...(shippingAddress && index === 0 ? [
+          { key: "shipping_address1", value: shippingAddress.address1 },
+          { key: "shipping_address2", value: shippingAddress.address2 || '' },
+          { key: "shipping_city", value: shippingAddress.city },
+          { key: "shipping_province", value: shippingAddress.province },
+          { key: "shipping_zip", value: shippingAddress.zip },
+          { key: "shipping_country", value: shippingAddress.country }
+        ] : [])
+      ]
     }));
 
+    // Create cart
     const response = await shopifyClient.request<CartResponse>(createCart, {
       input: {
         lines: cartLines
