@@ -749,7 +749,7 @@ export default function PuppyPalentines() {
   }
 
   return (
-    <>
+    <div className="relative min-h-screen pb-24">
       <Script src="https://www.youtube.com/iframe_api" strategy="beforeInteractive" />
       
       <div className="min-h-screen" style={{ backgroundColor: '#DDD1FF' }}>
@@ -801,7 +801,7 @@ export default function PuppyPalentines() {
                   <span className="text-2xl">1</span>
                 </div>
                 <h3 className="font-medium mb-2">Order a Puppy Palentine Bag</h3>
-                <p className="text-gray-600">Each bag has $20 of treats hand selected by us</p>
+                <p className="text-gray-600">Each bag has $20 of treats hand selected by us - or more if you edit the dollar amount!</p>
               </div>
               <div className="text-center">
                 <div className="bg-pink-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
@@ -881,26 +881,38 @@ export default function PuppyPalentines() {
             </div>
           </div>
         </div>
-
-        {/* Order Modal */}
-        {showOrderModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold text-gray-800">Order Puppy Palentine Bag</h3>
-                <button
-                  onClick={() => setShowOrderModal(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  ✕
-                </button>
-              </div>
-              
-              {renderStep()}
-            </div>
-          </div>
-        )}
       </div>
-    </>
+
+      {/* Order Modal */}
+      {showOrderModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-gray-800">Order Puppy Palentine Bag</h3>
+              <button
+                onClick={() => setShowOrderModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {renderStep()}
+          </div>
+        </div>
+      )}
+
+      {/* Sticky order button */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 shadow-lg z-50 bg-transparent">
+        <div className="max-w-xl mx-auto">
+          <button
+            onClick={() => setShowOrderModal(true)}
+            className="w-full py-3 bg-eggplant text-creamsicle font-quicksand font-bold rounded-lg hover:bg-eggplant/90 transition-colors"
+          >
+            Order Puppy Palentines Bag - $20
+          </button>
+        </div>
+      </div>
+    </div>
   )
 } 
