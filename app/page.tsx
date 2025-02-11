@@ -23,7 +23,7 @@ export default function HomePage() {
             Welcome to Daydreamers
           </h1>
           <p className="text-lg font-quicksand text-eggplant max-w-2xl mb-8">
-            We sell ice cream and other snacks for dogs at our pop-up locations in dog parks in Brooklyn, NY
+            We sell ice cream and other snacks for dogs at our pop-up locations in dog parks in Brooklyn, NY.
           </p>
         </div>
         
