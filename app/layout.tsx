@@ -17,7 +17,7 @@ const aloevera = localFont({
 })
 
 export const metadata: Metadata = {
-  title: 'Daydreamers Pet Supply',
+  title: 'Daydreamers | Food & Snacks for Dogs & Cats',
   description: 'Premium pet supplies for your furry friends',
   icons: {
     icon: [

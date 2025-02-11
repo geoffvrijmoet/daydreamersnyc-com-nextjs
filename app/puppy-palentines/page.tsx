@@ -82,6 +82,9 @@ interface ShopifyProduct {
 interface OrderFormData {
   dogName: string
   knowsAddress: boolean
+  // Owner info
+  ownerFirstName: string
+  ownerLastName: string
   // Address fields
   addressLine1: string
   addressLine2: string
@@ -123,6 +126,8 @@ export default function PuppyPalentines() {
   const [formData, setFormData] = useState<OrderFormData>({
     dogName: '',
     knowsAddress: true,
+    ownerFirstName: '',
+    ownerLastName: '',
     addressLine1: '',
     addressLine2: '',
     city: '',
@@ -339,6 +344,34 @@ export default function PuppyPalentines() {
 
               {formData.knowsAddress ? (
                 <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="ownerFirstName" className="block text-sm font-medium text-gray-700 mb-1">
+                        Owner&apos;s First Name
+                      </label>
+                      <input
+                        type="text"
+                        id="ownerFirstName"
+                        value={formData.ownerFirstName}
+                        onChange={(e) => setFormData({ ...formData, ownerFirstName: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        required={formData.knowsAddress}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="ownerLastName" className="block text-sm font-medium text-gray-700 mb-1">
+                        Owner&apos;s Last Name
+                      </label>
+                      <input
+                        type="text"
+                        id="ownerLastName"
+                        value={formData.ownerLastName}
+                        onChange={(e) => setFormData({ ...formData, ownerLastName: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        required={formData.knowsAddress}
+                      />
+                    </div>
+                  </div>
                   <div>
                     <label htmlFor="addressLine1" className="block text-sm font-medium text-gray-700 mb-1">
                       Address
@@ -432,7 +465,7 @@ export default function PuppyPalentines() {
               </button>
               <button
                 onClick={handleNextStep}
-                disabled={formData.knowsAddress ? !formData.addressLine1 || !formData.city || !formData.zipCode : !formData.ownerInfo}
+                disabled={formData.knowsAddress ? !formData.ownerFirstName || !formData.ownerLastName || !formData.addressLine1 || !formData.city || !formData.zipCode : !formData.ownerInfo}
                 className="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next →
@@ -640,7 +673,7 @@ export default function PuppyPalentines() {
         
         // Format the delivery address
         const deliveryAddress = formData.knowsAddress 
-          ? `${formData.addressLine1}${formData.addressLine2 ? `, ${formData.addressLine2}` : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`
+          ? `${formData.ownerFirstName} ${formData.ownerLastName}, ${formData.addressLine1}${formData.addressLine2 ? `, ${formData.addressLine2}` : ''}, ${formData.city}, ${formData.state} ${formData.zipCode}`
           : `Need to find: ${formData.ownerInfo}`
 
         // Prepare line items for the checkout
@@ -690,6 +723,8 @@ export default function PuppyPalentines() {
             // Add shipping address if known
             ...(formData.knowsAddress && {
               shippingAddress: {
+                firstName: formData.ownerFirstName,
+                lastName: formData.ownerLastName,
                 address1: formData.addressLine1,
                 address2: formData.addressLine2 || '',
                 city: formData.city,
@@ -918,16 +953,18 @@ export default function PuppyPalentines() {
       )}
 
       {/* Sticky order button */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 shadow-lg z-50 bg-transparent">
-        <div className="max-w-xl mx-auto">
-          <button
-            onClick={() => setShowOrderModal(true)}
-            className="w-full py-3 bg-eggplant text-creamsicle font-quicksand font-bold rounded-lg hover:bg-eggplant/90 transition-colors"
-          >
-            Order Puppy Palentines Bag - $20
-          </button>
+      {!showOrderModal && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 shadow-lg z-50 bg-transparent">
+          <div className="max-w-xl mx-auto">
+            <button
+              onClick={() => setShowOrderModal(true)}
+              className="w-full py-3 bg-eggplant text-creamsicle font-quicksand font-bold rounded-lg hover:bg-eggplant/90 transition-colors"
+            >
+              Order Puppy Palentines Bag - $20
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 } 

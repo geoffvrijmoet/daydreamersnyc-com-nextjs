@@ -12,6 +12,8 @@ interface LineItem {
 }
 
 interface ShippingAddress {
+  firstName: string
+  lastName: string
   address1: string
   address2?: string
   city: string
@@ -83,6 +85,8 @@ export async function POST(request: Request) {
     // Add shipping address parameters if provided
     if (shippingAddress) {
       const addressParams = {
+        'checkout[shipping_address][first_name]': shippingAddress.firstName,
+        'checkout[shipping_address][last_name]': shippingAddress.lastName,
         'checkout[shipping_address][address1]': shippingAddress.address1,
         'checkout[shipping_address][address2]': shippingAddress.address2 || '',
         'checkout[shipping_address][city]': shippingAddress.city,
