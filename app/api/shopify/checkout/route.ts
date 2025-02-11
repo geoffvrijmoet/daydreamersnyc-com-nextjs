@@ -1,76 +1,60 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { shopifyClient, createCart, CartResponse } from '@/lib/shopify'
+import { shopifyClient, createCheckout, CheckoutResponse } from '@/lib/shopify'
 
 interface LineItem {
-  merchandiseId: string
+  variantId: string
   quantity: number
-  attributes?: Array<{
+  customAttributes?: Array<{
     key: string
     value: string
   }>
 }
 
-interface CartInput {
+interface CheckoutInput {
   lines: LineItem[]
 }
 
 export async function POST(request: Request) {
   try {
-    const { lines } = await request.json() as CartInput
+    const { lines } = await request.json() as CheckoutInput;
 
-    console.log('Creating cart with lines:', lines)
+    console.log('Creating checkout with lines:', lines);
 
-    const response = await shopifyClient.request<CartResponse>(createCart, {
-      input: { lines }
-    })
-
-    if (response.cartCreate.userErrors.length > 0) {
-      console.error('Cart creation errors:', response.cartCreate.userErrors)
-      return NextResponse.json(
-        { error: 'There was an error creating the cart. Please try again.' },
-        { status: 400 }
-      )
-    }
-
-    // Get the original checkout URL
-    const originalCheckoutUrl = response.cartCreate.cart.checkoutUrl
-    console.log('Original checkout URL:', originalCheckoutUrl)
-
-    // Set cart ID in cookies
-    cookies().set('cartId', response.cartCreate.cart.id)
-
-    // Parse the original URL to preserve the path and query parameters
-    const originalUrl = new URL(originalCheckoutUrl)
-    
-    // Construct new checkout URL with myshopify domain
-    const checkoutUrl = `https://daydreamers-pet-supply.myshopify.com${originalUrl.pathname}${originalUrl.search}`
-    console.log('Modified checkout URL:', checkoutUrl)
-
-    try {
-      // Validate the URL
-      const url = new URL(checkoutUrl)
-      if (!url.hostname.includes('myshopify.com')) {
-        throw new Error('Invalid checkout domain')
+    const response = await shopifyClient.request<CheckoutResponse>(createCheckout, {
+      input: {
+        lineItems: lines.map(line => ({
+          variantId: line.variantId,
+          quantity: line.quantity,
+          customAttributes: line.customAttributes
+        }))
       }
-      console.log('Final checkout URL:', url.toString())
-    } catch (error) {
-      console.error('URL validation error:', error)
-      throw new Error('Invalid checkout URL')
+    });
+
+    if (response.checkoutCreate.checkoutUserErrors.length > 0) {
+      console.error('Checkout creation errors:', response.checkoutCreate.checkoutUserErrors);
+      return NextResponse.json(
+        { error: 'There was an error creating the checkout. Please try again.' },
+        { status: 400 }
+      );
     }
+
+    // Use the checkout URL exactly as Shopify provides it
+    const checkoutUrl = response.checkoutCreate.checkout.webUrl;
+    console.log('Final checkout URL:', checkoutUrl);
+
+    // Set checkout ID in cookies
+    cookies().set('checkoutId', response.checkoutCreate.checkout.id);
 
     return NextResponse.json({
-      cart: {
-        ...response.cartCreate.cart,
-        checkoutUrl
-      },
+      checkout: response.checkoutCreate.checkout,
       checkoutUrl
-    }, { status: 201 })
+    }, { status: 201 });
   } catch (error) {
-    console.error('Error creating cart:', error)
+    console.error('Error creating checkout:', error);
     return NextResponse.json(
-      { error: 'There was an error creating the cart. Please try again.' },
+      { error: 'There was an error creating the checkout. Please try again.' },
       { status: 500 }
-    )
+    );
   }
-} 
+}

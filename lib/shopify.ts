@@ -60,6 +60,20 @@ export interface CartResponse {
   }
 }
 
+export interface CheckoutResponse {
+  checkoutCreate: {
+    checkout: {
+      id: string
+      webUrl: string
+    }
+    checkoutUserErrors: Array<{
+      code: string
+      field: string[]
+      message: string
+    }>
+  }
+}
+
 type Variables = Record<string, unknown>
 
 export const shopifyClient = {
@@ -149,6 +163,22 @@ export const createCart = `
         }
       }
       userErrors {
+        field
+        message
+      }
+    }
+  }
+`
+
+export const createCheckout = `
+  mutation checkoutCreate($input: CheckoutCreateInput!) {
+    checkoutCreate(input: $input) {
+      checkout {
+        id
+        webUrl
+      }
+      checkoutUserErrors {
+        code
         field
         message
       }
