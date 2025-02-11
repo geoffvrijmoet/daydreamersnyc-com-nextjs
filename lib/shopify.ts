@@ -124,44 +124,6 @@ export const createCart = `
       cart {
         id
         checkoutUrl
-        cost {
-          totalAmount {
-            amount
-            currencyCode
-          }
-          totalTaxAmount {
-            amount
-            currencyCode
-          }
-        }
-        lines(first: 250) {
-          edges {
-            node {
-              id
-              quantity
-              cost {
-                totalAmount {
-                  amount
-                  currencyCode
-                }
-              }
-              merchandise {
-                ... on ProductVariant {
-                  id
-                  title
-                  product {
-                    title
-                    handle
-                    featuredImage {
-                      url
-                      altText
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
       }
       userErrors {
         field
