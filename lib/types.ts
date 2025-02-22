@@ -121,10 +121,11 @@ export interface Collection {
 
 export interface CollectionsResponse {
   collections: {
+    pageInfo: PageInfo
     edges: Array<{
-      node: Collection;
-    }>;
-  };
+      node: Collection
+    }>
+  }
 }
 
 export interface ProductVariant {
@@ -136,7 +137,7 @@ export interface ProductVariant {
   };
   image?: {
     url: string;
-    altText: string;
+    altText: string | null;
   };
 }
 
@@ -164,4 +165,20 @@ export interface CartLinesAddResponse {
       message: string;
     }>;
   };
+}
+
+export interface PageInfo {
+  hasNextPage: boolean
+  endCursor: string | null
+}
+
+export interface CollectionProductsResponse {
+  collection: {
+    products: {
+      pageInfo: PageInfo
+      edges: Array<{
+        node: Product
+      }>
+    }
+  }
 } 

@@ -36,7 +36,7 @@ export default function HomePage() {
           </Link>
           <Link 
             href="https://training.daydreamersnyc.com"
-            className="px-8 py-4 bg-eggplant text-creamsicle rounded-full font-quicksand font-bold text-lg hover:bg-eggplant/90 transition-colors"
+            className="px-8 py-4 bg-daydreamer text-lolligag rounded-full font-quicksand font-bold text-lg hover:opacity-80 transition-colors border-[1px] border-lolligag"
           >
             Interested in Training?
           </Link>

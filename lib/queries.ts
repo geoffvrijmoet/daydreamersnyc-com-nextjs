@@ -96,14 +96,22 @@ export const CUSTOMER_LOGIN_MUTATION = `
 `;
 
 export const COLLECTIONS_WITH_PRODUCTS_QUERY = `
-  query CollectionsWithProducts {
-    collections(first: 20) {
+  query CollectionsWithProducts($cursor: String) {
+    collections(first: 250, after: $cursor) {
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
       edges {
         node {
           id
           title
           handle
-          products(first: 20) {
+          products(first: 250) {
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
             edges {
               node {
                 id
@@ -139,6 +147,57 @@ export const COLLECTIONS_WITH_PRODUCTS_QUERY = `
                       altText
                     }
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const COLLECTION_PRODUCTS_QUERY = `
+  query CollectionProducts($collectionId: ID!, $cursor: String) {
+    collection(id: $collectionId) {
+      products(first: 250, after: $cursor) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        edges {
+          node {
+            id
+            title
+            handle
+            description
+            priceRange {
+              minVariantPrice {
+                amount
+                currencyCode
+              }
+            }
+            variants(first: 250) {
+              edges {
+                node {
+                  id
+                  title
+                  price {
+                    amount
+                    currencyCode
+                  }
+                  image {
+                    url
+                    altText
+                  }
+                }
+              }
+            }
+            images(first: 1) {
+              edges {
+                node {
+                  url
+                  altText
                 }
               }
             }

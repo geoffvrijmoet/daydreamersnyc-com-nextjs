@@ -1,6 +1,6 @@
 import { shopifyClient } from '@/lib/shopify'
-import { COLLECTIONS_WITH_PRODUCTS_QUERY } from '@/lib/queries'
-import type { CollectionsResponse, Collection } from '@/lib/types'
+import { COLLECTIONS_WITH_PRODUCTS_QUERY, COLLECTION_PRODUCTS_QUERY } from '@/lib/queries'
+import type { CollectionsResponse, Collection, CollectionProductsResponse, Product, ProductVariant } from '@/lib/types'
 import { CartTotal } from '@/components/cart-total'
 import { MenuContent } from '@/components/menu-content'
 
@@ -15,14 +15,71 @@ const MENU_SECTION_ORDER = {
 
 type MenuSection = keyof typeof MENU_SECTION_ORDER
 
-async function getCollections(): Promise<Collection[]> {
-  try {
-    const data = await shopifyClient.request<CollectionsResponse>(COLLECTIONS_WITH_PRODUCTS_QUERY)
-    return data.collections.edges.map(edge => edge.node)
-  } catch (error) {
-    console.error('Error fetching collections:', error)
-    return []
+async function getAllProductsForCollection(collectionId: string): Promise<Array<{ node: Product }>> {
+  let allProducts: Array<{ node: Product }> = [];
+  let hasNextPage = true;
+  let cursor: string | null = null;
+
+  while (hasNextPage) {
+    try {
+      const response: CollectionProductsResponse = await shopifyClient.request<CollectionProductsResponse>(
+        COLLECTION_PRODUCTS_QUERY,
+        {
+          collectionId,
+          cursor
+        }
+      );
+
+      const { products } = response.collection;
+      allProducts = [...allProducts, ...products.edges];
+      
+      hasNextPage = products.pageInfo.hasNextPage;
+      cursor = products.pageInfo.endCursor;
+    } catch (error) {
+      console.error('Error fetching products for collection:', error);
+      break;
+    }
   }
+
+  return allProducts;
+}
+
+async function getCollections(): Promise<Collection[]> {
+  let allCollections: Collection[] = [];
+  let hasNextPage = true;
+  let cursor: string | null = null;
+
+  while (hasNextPage) {
+    try {
+      const data: CollectionsResponse = await shopifyClient.request<CollectionsResponse>(
+        COLLECTIONS_WITH_PRODUCTS_QUERY,
+        { cursor }
+      );
+
+      // For each collection, fetch all its products
+      const collectionsWithAllProducts = await Promise.all(
+        data.collections.edges.map(async ({ node: collection }) => {
+          const allProducts = await getAllProductsForCollection(collection.id);
+          return {
+            ...collection,
+            products: {
+              edges: allProducts
+            }
+          };
+        })
+      );
+
+      allCollections = [...allCollections, ...collectionsWithAllProducts];
+      
+      hasNextPage = data.collections.pageInfo.hasNextPage;
+      cursor = data.collections.pageInfo.endCursor;
+    } catch (error) {
+      console.error('Error fetching collections:', error);
+      return [];
+    }
+  }
+
+  return allCollections;
 }
 
 export default async function MenuPage() {
@@ -57,8 +114,8 @@ export default async function MenuPage() {
         .map(({ node: product }) => {
           // If this is the ice cream product with variants, create separate products
           if (product.title === "Organic Doggy Ice Cream") {
-            const variants = product.variants.edges.map(edge => edge.node)
-            return variants.map(variant => ({
+            const variants = product.variants.edges.map(({ node: variant }: { node: ProductVariant }) => variant)
+            return variants.map((variant: ProductVariant) => ({
               node: {
                 ...product,
                 id: variant.id, // Use variant ID as product ID
