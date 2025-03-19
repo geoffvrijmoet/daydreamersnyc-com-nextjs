@@ -1,12 +1,51 @@
 import { NextResponse } from 'next/server'
 import { shopifyClient } from '@/lib/shopify'
 
+// Updated cart creation mutation with complete fields as per the latest Storefront Cart API
 const CART_CREATE_MUTATION = `
   mutation cartCreate($input: CartInput!) {
     cartCreate(input: $input) {
       cart {
         id
         checkoutUrl
+        totalQuantity
+        cost {
+          totalAmount {
+            amount
+            currencyCode
+          }
+          subtotalAmount {
+            amount
+            currencyCode
+          }
+          totalTaxAmount {
+            amount
+            currencyCode
+          }
+        }
+        lines(first: 100) {
+          edges {
+            node {
+              id
+              quantity
+              merchandise {
+                ... on ProductVariant {
+                  id
+                  title
+                  product {
+                    title
+                  }
+                }
+              }
+              cost {
+                totalAmount {
+                  amount
+                  currencyCode
+                }
+              }
+            }
+          }
+        }
       }
       userErrors {
         field
@@ -56,7 +95,12 @@ export async function POST(request: Request) {
           merchandiseId: item.merchandiseId,
           quantity: item.quantity,
           attributes: item.attributes
-        }))
+        })),
+        // Include buyer identity if available (optional)
+        // buyerIdentity: {
+        //   email: customerEmail,
+        //   countryCode: customerCountry,
+        // }
       }
     })
 
@@ -76,7 +120,8 @@ export async function POST(request: Request) {
     console.log('Final checkout URL:', checkoutUrl)
 
     return NextResponse.json({
-      checkoutUrl
+      checkoutUrl,
+      cart: response.cartCreate.cart
     })
   } catch (error) {
     console.error('Error creating cart:', error)

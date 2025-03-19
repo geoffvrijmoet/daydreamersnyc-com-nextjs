@@ -1,7 +1,7 @@
 import { NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN, NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN } from './constants'
 
 const domain = `https://${NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN}`
-const endpoint = `${domain}/api/2024-01/graphql.json`
+const endpoint = `${domain}/api/2024-04/graphql.json`
 
 interface ShopifyResponse<T> {
   data: T
@@ -123,6 +123,48 @@ export const createCart = `
       cart {
         id
         checkoutUrl
+        totalQuantity
+        cost {
+          totalAmount {
+            amount
+            currencyCode
+          }
+          subtotalAmount {
+            amount
+            currencyCode
+          }
+          totalTaxAmount {
+            amount
+            currencyCode
+          }
+        }
+        lines(first: 100) {
+          edges {
+            node {
+              id
+              quantity
+              merchandise {
+                ... on ProductVariant {
+                  id
+                  title
+                  product {
+                    title
+                    featuredImage {
+                      url
+                      altText
+                    }
+                  }
+                }
+              }
+              cost {
+                totalAmount {
+                  amount
+                  currencyCode
+                }
+              }
+            }
+          }
+        }
       }
       userErrors {
         field

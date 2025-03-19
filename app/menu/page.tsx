@@ -3,6 +3,7 @@ import { COLLECTIONS_WITH_PRODUCTS_QUERY, COLLECTION_PRODUCTS_QUERY } from '@/li
 import type { CollectionsResponse, Collection, CollectionProductsResponse, Product, ProductVariant } from '@/lib/types'
 import { CartTotal } from '@/components/cart-total'
 import { MenuContent } from '@/components/menu-content'
+import type { Metadata } from 'next'
 
 // Define the order of collections - this determines priority
 const MENU_SECTION_ORDER = {
@@ -150,10 +151,10 @@ export default async function MenuPage() {
   )
 }
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Menu | Daydreamers Doggy Ice Cream',
-  description: 'Browse our delicious selection of dog-friendly ice cream treats',
+  description: 'Browse our delicious selection of dog-friendly ice cream treats, chews, and toys. Find our ice cream pop-ups at Brooklyn dog parks.',
   alternates: {
-    canonical: 'https://daydreamersnyc.com/menu',
+    canonical: '/menu',
   },
 } 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { shopifyClient, createCart } from '@/lib/shopify'
+import { shopifyClient } from '@/lib/shopify'
 
 interface LineItem {
   variantId: string
@@ -41,6 +41,60 @@ interface CartResponse {
   }
 }
 
+// Updated cart creation mutation with complete fields
+const CREATE_CART_MUTATION = `
+  mutation cartCreate($input: CartInput!) {
+    cartCreate(input: $input) {
+      cart {
+        id
+        checkoutUrl
+        totalQuantity
+        cost {
+          totalAmount {
+            amount
+            currencyCode
+          }
+          subtotalAmount {
+            amount
+            currencyCode
+          }
+          totalTaxAmount {
+            amount
+            currencyCode
+          }
+        }
+        lines(first: 100) {
+          edges {
+            node {
+              id
+              quantity
+              merchandise {
+                ... on ProductVariant {
+                  id
+                  title
+                  product {
+                    title
+                  }
+                }
+              }
+              cost {
+                totalAmount {
+                  amount
+                  currencyCode
+                }
+              }
+            }
+          }
+        }
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`
+
 export async function POST(request: Request) {
   try {
     const { lines, shippingAddress, requiresShipping = true } = await request.json() as CartInput;
@@ -58,10 +112,29 @@ export async function POST(request: Request) {
       attributes: line.attributes || []
     }));
 
-    // Create cart
-    const response = await shopifyClient.request<CartResponse>(createCart, {
+    // Prepare buyer identity if shipping address is provided
+    const buyerIdentity = shippingAddress ? {
+      email: '', // can be populated if you have customer email
+      countryCode: shippingAddress.country,
+      deliveryAddressPreferences: [{
+        deliveryAddress: {
+          firstName: shippingAddress.firstName,
+          lastName: shippingAddress.lastName,
+          address1: shippingAddress.address1,
+          address2: shippingAddress.address2 || '',
+          city: shippingAddress.city,
+          province: shippingAddress.province,
+          zip: shippingAddress.zip,
+          country: shippingAddress.country,
+        }
+      }]
+    } : undefined;
+
+    // Create cart with updated API
+    const response = await shopifyClient.request<CartResponse>(CREATE_CART_MUTATION, {
       input: {
         lines: cartLines,
+        buyerIdentity,
         deliveryGroups: requiresShipping ? undefined : [{ 
           deliveryOptions: [{ 
             handle: "no-shipping-required" 
@@ -82,8 +155,9 @@ export async function POST(request: Request) {
     let checkoutUrl = response.cartCreate.cart.checkoutUrl;
     console.log('Base checkout URL:', checkoutUrl);
 
-    // Add shipping address parameters if provided
-    if (shippingAddress) {
+    // Address parameters are now handled through the buyerIdentity in the API call
+    // but we can still add additional parameters if needed
+    if (shippingAddress && !buyerIdentity) {
       const addressParams = {
         'checkout[shipping_address][first_name]': shippingAddress.firstName,
         'checkout[shipping_address][last_name]': shippingAddress.lastName,
@@ -110,7 +184,8 @@ export async function POST(request: Request) {
     cookies().set('cartId', response.cartCreate.cart.id);
 
     return NextResponse.json({
-      checkoutUrl
+      checkoutUrl,
+      cart: response.cartCreate.cart
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating cart:', error);

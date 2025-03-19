@@ -1,3 +1,13 @@
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'About Daydreamers | Brooklyn Dog Ice Cream & Treats',
+  description: 'Learn about Daydreamers, Brooklyn\'s first ice cream and snack bar exclusively for dogs. Discover our story, mission, and commitment to bringing joy to our four-legged friends.',
+  alternates: {
+    canonical: '/about',
+  },
+}
+
 export default function AboutPage() {
   return (
     <div className="container max-w-3xl mx-auto px-4 py-8">
